@@ -197,8 +197,8 @@
       }
     },
     "end_game": {
-      "name": "End Game",
-      "description": "Stop the current game.",
+      "name": "Clear Game",
+      "description": "Clear the current or finished game back to a blank board. Undo brings it back.",
       "fields": {
         "device_id": {
           "name": "Board",

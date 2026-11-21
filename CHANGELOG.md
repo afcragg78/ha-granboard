@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- `granboard.end_game` now fully clears the game (including a finished game with a winner) back to a blank idle board. Undo restores it.
+
 ## 0.2.1
 
 - Player colours are now pure, fully saturated LED colours (red ff0000, blue 0000ff, green 00ff00, ...) so the board and WLED show sharp colours instead of pastel tones (red looked pink).

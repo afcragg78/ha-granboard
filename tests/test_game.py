@@ -226,7 +226,8 @@ def test_end_game_and_persistence_roundtrip():
     restored = Game.load(g.dump())
     assert restored.as_dict() | {"can_undo": None} == g.as_dict() | {"can_undo": None}
     g.end_game()
-    assert g.status == "idle"
+    assert g.status == "idle" and g.players == [] and g.winner is None
+    assert g.undo() and g.status == "playing" and g.players
     assert Game.load({"garbage": 1, "players": [{"nope": 1}]}).status == "idle"
 
 

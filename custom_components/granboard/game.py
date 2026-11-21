@@ -170,10 +170,16 @@ class Game:
         self.turn_start_score = self.players[0].score
 
     def end_game(self) -> None:
-        if self.status == STATUS_IDLE:
+        """Clear the game (playing or finished) back to a blank idle board.
+
+        The cleared game stays on the undo stack, so Undo brings it back.
+        """
+        if self.status == STATUS_IDLE and not self.players:
             return
         self._snapshot()
-        self.status = STATUS_FINISHED if self.winner else STATUS_IDLE
+        undo = self._undo
+        self.__init__()
+        self._undo = undo
 
     # ------------------------------------------------------------- undo
     def _snapshot(self) -> None:
