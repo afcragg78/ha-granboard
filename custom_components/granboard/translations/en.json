@@ -25,9 +25,10 @@
     "step": {
       "init": {
         "data": {
-          "button_next_player": "Board Button Ends The Turn"
+          "button_next_player": "Board Button Ends The Turn",
+          "debounce_ms": "Repeat Hit Window (ms)"
         },
-        "description": "While a game is running, the button on the board moves to the next player."
+        "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off)."
       }
     }
   },

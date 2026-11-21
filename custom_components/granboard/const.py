@@ -15,5 +15,7 @@ EVENT_AWARD = "granboard_award"
 CONF_CONNECT = "connect"
 CONF_BUTTON_NEXT = "button_next_player"
 DEFAULT_BUTTON_NEXT = True
+CONF_DEBOUNCE_MS = "debounce_ms"
+DEFAULT_DEBOUNCE_MS = 500
 
 STORAGE_VERSION = 1

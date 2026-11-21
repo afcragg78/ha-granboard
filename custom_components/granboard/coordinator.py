@@ -33,7 +33,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_BUTTON_NEXT,
     CONF_CONNECT,
+    CONF_DEBOUNCE_MS,
     DEFAULT_BUTTON_NEXT,
+    DEFAULT_DEBOUNCE_MS,
     DOMAIN,
     EVENT_AWARD,
     EVENT_BUTTON,
@@ -45,7 +47,7 @@ from .const import (
 )
 from .game import Game
 from .protocol import Button, FrameBuffer, Hit, decode_frame
-from .reconnect import WarmupGate, backoff_seconds
+from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,6 +80,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{self.address.replace(':', '').lower()}")
         self._buffer = FrameBuffer()
         self._warmup = WarmupGate()
+        self._dedupe = DuplicateFilter(self.debounce_ms)
         self._client: BleakClientWithServiceCache | None = None
         self._device: BLEDevice | None = None
         self._disconnected = asyncio.Event()
@@ -96,6 +99,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     @property
     def button_next_player(self) -> bool:
         return bool(self.entry.options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT))
+
+    @property
+    def debounce_ms(self) -> int:
+        return int(self.entry.options.get(CONF_DEBOUNCE_MS, DEFAULT_DEBOUNCE_MS))
 
     async def async_start(self) -> None:
         stored = await self._store.async_load()
@@ -188,6 +195,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         await close_stale_connections_by_address(self.address)
         self._disconnected.clear()
         self._buffer.clear()
+        self._dedupe.reset()
         client = await establish_connection(
             BleakClientWithServiceCache,
             device,
@@ -281,6 +289,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         for frame in self._buffer.feed(payload):
             if not self._warmup.open():
                 _LOGGER.debug("Granboard %s ignoring warm-up frame %s", self.address, frame)
+                continue
+            self._dedupe.set_window_ms(self.debounce_ms)  # Configure changes apply without a reload
+            if not self._dedupe.accept(frame):
+                _LOGGER.debug("Granboard %s ignoring repeat frame %s", self.address, frame)
                 continue
             self.handle_frame(frame)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Fix: one dart or press could count two or three times, because the board repeats the same frame within about 150 ms. An identical frame arriving within 500 ms of the last one is now ignored. Adjust it with **Repeat Hit Window (ms)** in Configure (0 turns it off). The throw service is not filtered.
+
 ## 0.1.0
 
 - First release. Bluetooth discovery by name or service UUID, plus manual setup by address.

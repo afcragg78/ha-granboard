@@ -125,3 +125,29 @@ async def test_discovery_and_warmup(hass: HomeAssistant) -> None:
     assert [h["segment"] for h in hits] == ["DB"]
     assert hits[0]["ring"] == "bullseye" and hits[0]["raw"] == "4.0@"
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_repeat_frames_count_once(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, options={"connect": False})
+    coordinator = entry.runtime_data
+    coordinator._warmup._until = 0
+    clock = [10.0]
+    coordinator._dedupe._clock = lambda: clock[0]
+    hits = []
+    from homeassistant.core import callback
+
+    hass.bus.async_listen("granboard_hit", callback(lambda e: hits.append(e.data["segment"])))
+    for dt in (0, 0.06, 0.15):  # one press, three frames
+        clock[0] += dt
+        coordinator._handle_payload(b"3.4@")
+    clock[0] += 0.01
+    coordinator._handle_payload(b"3.6@")  # different bed: counts
+    clock[0] += 0.7
+    coordinator._handle_payload(b"3.6@")  # same bed, later: a new dart
+    await hass.async_block_till_done()
+    assert hits == ["T20", "D20", "D20"]
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "debounce_ms": 0})
+    coordinator._handle_payload(b"3.6@")
+    await hass.async_block_till_done()
+    assert hits[-1] == "D20" and len(hits) == 4
+    await hass.config_entries.async_unload(entry.entry_id)

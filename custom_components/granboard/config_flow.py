@@ -16,7 +16,7 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT, DOMAIN
+from .const import CONF_BUTTON_NEXT, CONF_DEBOUNCE_MS, DEFAULT_BUTTON_NEXT, DEFAULT_DEBOUNCE_MS, DOMAIN
 from .protocol import BOARD_NAME, SERVICE_UUID
 
 _MAC = re.compile(r"^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
@@ -107,7 +107,11 @@ class GranboardOptionsFlow(OptionsFlow):
                 vol.Required(
                     CONF_BUTTON_NEXT,
                     default=self.config_entry.options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT),
-                ): bool
+                ): bool,
+                vol.Required(
+                    CONF_DEBOUNCE_MS,
+                    default=int(self.config_entry.options.get(CONF_DEBOUNCE_MS, DEFAULT_DEBOUNCE_MS)),
+                ): vol.All(vol.Coerce(int), vol.Range(min=0, max=2000)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
