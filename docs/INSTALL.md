@@ -395,7 +395,8 @@ Commands are queued at least 60 ms apart, a new dart replaces effects still wait
 | **Color Cycle** | Whole ring glides along the palette (rainbow by default). |
 | **Palette Steps** | Whole ring steps through palette colors, a few seconds each. Intensity = how many colors. |
 | **Chase** | One number at a time goes around the ring. |
-| **Rainbow Chase** | Chase in rainbow colors (or the palette). |
+| **Rainbow Chase** | Chase in rainbow colors (or the palette): one number lit at a time. |
+| **Circular Rainbow** | The whole ring animates with the board's own wave while its two colors keep moving round the rainbow (or the palette), about one new wave a second. Intensity = how far apart the two colors are. |
 | **Bounce** | One number goes round and back (scanner). |
 | **Circular Wipe** | Numbers light one by one around the ring, then it clears. |
 | **Twinkle** | Random numbers blink. Intensity = how many. |
@@ -405,7 +406,7 @@ Commands are queued at least 60 ms apart, a new dart replaces effects still wait
 
 ### Settings
 
-- **Ring Palette**: 64 WLED-style palettes, including Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Rainbow Bands, Party, Ocean, Forest, Lava, Heat, Sunset, Pastel, Beach, Fire, Ice, Aurora, Tiamat, Sakura, Temperature, Candy and more (the full list is in the README). **Default** lets each effect use its own colors. Any other palette colors Color Cycle, Palette Steps, Wave, Chase, Rainbow Chase, Bounce, Circular Wipe, Twinkle and Fire Flicker. Very dark palettes (for example Semi Blue) look mostly off on the ring.
+- **Ring Palette**: 64 WLED-style palettes, including Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Rainbow Bands, Party, Ocean, Forest, Lava, Heat, Sunset, Pastel, Beach, Fire, Ice, Aurora, Tiamat, Sakura, Temperature, Candy and more (the full list is in the README). **Default** lets each effect use its own colors. Any other palette colors Color Cycle, Palette Steps, Wave, Chase, Rainbow Chase, Circular Rainbow, Bounce, Circular Wipe, Twinkle and Fire Flicker. Very dark palettes (for example Semi Blue) look mostly off on the ring.
 - **Ring Speed** (0 to 255, default 128): higher is faster, up to 4 times; lower is slower, down to 4 times.
 - **Ring Intensity** (0 to 255, default 128): depth or density, as described in the table.
 - **Ring Color 2** (`#RRGGBB`): the second color for Wave and the Colors 1&2 / Color Gradient palettes. Leave it empty to use the opposite of the light's color.

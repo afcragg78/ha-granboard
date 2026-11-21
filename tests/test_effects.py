@@ -84,3 +84,15 @@ def test_palettes_list_and_sampling():
     assert P.color_at(P.COLORS_1_2, 200, (1, 2, 3), (4, 5, 6)) == (4, 5, 6)
     assert P.color_at(P.COLOR_GRADIENT, 128, (0, 0, 0), (200, 100, 0)) == (200, 100, 0)
     assert P.css_gradient("Heat").startswith("linear-gradient(90deg, #000000 0%")
+
+
+def test_circular_rainbow_is_a_rotating_rainbow_wave():
+    steps = _take(E.CIRCULAR_RAINBOW, 15)
+    assert all(c[0] == led.WAVE and c[10] == led.FULL_RING for c, _ in steps)
+    assert all(w >= 1200 for _, w in steps)  # about one write a second at normal speed
+    firsts = [c[1:4] for c, _ in steps]
+    assert len(set(firsts)) == 15 and firsts[0] == bytes((255, 0, 0))  # colours travel round the wheel
+    assert all(c[1:4] != c[4:7] for c, _ in steps)  # two different colours in every wave
+    ocean = _take(E.CIRCULAR_RAINBOW, 3, palette="Ocean")
+    assert ocean[0][0][1:4] == bytes(P.color_at("Ocean", 0, (255, 255, 255), (0, 0, 0)))
+    assert E.CIRCULAR_RAINBOW in E.EFFECTS and E.CIRCULAR_RAINBOW not in E.HOLD_EFFECTS

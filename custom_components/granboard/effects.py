@@ -32,6 +32,7 @@ COLOR_CYCLE = "Color Cycle"
 PALETTE_STEPS = "Palette Steps"
 CHASE = "Chase"
 RAINBOW_CHASE = "Rainbow Chase"
+CIRCULAR_RAINBOW = "Circular Rainbow"
 BOUNCE = "Bounce"
 WIPE = "Circular Wipe"
 TWINKLE = "Twinkle"
@@ -40,14 +41,14 @@ POLICE = "Police"
 LIGHTNING = "Lightning"
 
 EFFECTS: tuple[str, ...] = (
-    SOLID, BLINK, BREATHE, HEARTBEAT, WAVE, COLOR_CYCLE, PALETTE_STEPS, CHASE, RAINBOW_CHASE,
+    SOLID, BLINK, BREATHE, HEARTBEAT, WAVE, COLOR_CYCLE, PALETTE_STEPS, CHASE, RAINBOW_CHASE, CIRCULAR_RAINBOW,
     BOUNCE, WIPE, TWINKLE, FIRE_FLICKER, POLICE, LIGHTNING,
 )
 # Effects that hold the whole ring in one colour: an unchanged frame is not re-sent.
 # (Blinks and waves play and stop by themselves, so a repeat is a new flash.)
 HOLD_EFFECTS = frozenset({SOLID, BREATHE, COLOR_CYCLE, PALETTE_STEPS, FIRE_FLICKER})
 # Palette the effect uses when the Ring Palette is Default.
-DEFAULT_PALETTES = {COLOR_CYCLE: pal.RAINBOW, PALETTE_STEPS: pal.RAINBOW, RAINBOW_CHASE: pal.RAINBOW, FIRE_FLICKER: pal.FIRE}
+DEFAULT_PALETTES = {COLOR_CYCLE: pal.RAINBOW, PALETTE_STEPS: pal.RAINBOW, RAINBOW_CHASE: pal.RAINBOW, CIRCULAR_RAINBOW: pal.RAINBOW, FIRE_FLICKER: pal.FIRE}
 
 DEFAULT_SPEED = 128
 DEFAULT_INTENSITY = 128
@@ -123,6 +124,18 @@ def frames(effect: str, opts: RingOptions, rng: random.Random | None = None) -> 
             else:
                 a, b = _color(effect, opts, step * 64), _color(effect, opts, step * 64 + 128)
             yield led.wave_command(_lit(a, opts), _lit(b, opts), 0x05), wait(4000, s)
+            step += 1
+    elif effect == CIRCULAR_RAINBOW:
+        # The board's own wave (0x11) animates round the ring by itself; each new wave
+        # moves its two colours further along the rainbow, so the colours circle the
+        # board continuously. No native rainbow command is documented, so this is built
+        # from the proven wave command (about one write a second).
+        gap = round(43 + 85 * k / 255)  # Intensity: how far apart the two colours are (60-180 degrees)
+        step = 0
+        while True:
+            pos = step * 17  # 15 waves per trip round the rainbow
+            a, b = _color(effect, opts, pos), _color(effect, opts, pos + gap)
+            yield led.wave_command(_lit(a, opts), _lit(b, opts), 0x04), wait(1200, s)
             step += 1
     elif effect == COLOR_CYCLE:
         step = 0

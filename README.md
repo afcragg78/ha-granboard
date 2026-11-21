@@ -29,7 +29,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - **Games Built In** – x01 (with double out), Cricket, Count-Up, and Around The Clock, with undo, next player, and clear game.
 - **Player Colors** – each player gets a sharp, fully saturated color on the board and on your lights.
 - **Board Lighting** – hit flashes, award effects (Bullseye, Ton 80, Hat Trick and more), and the circular wipe between turns, like the official app.
-- **LED Ring Light** – use the board's ring as a light between games, with 15 effects and 64 WLED-style palettes.
+- **LED Ring Light** – use the board's ring as a light between games, with 16 effects (including Circular Rainbow) and 64 WLED-style palettes.
 - **WLED Sections** – add lights placed around the board in Configure: the lights nearest each dart glow in the player's color, and awards and turn changes sweep round them, then every light goes back exactly as it was.
 - **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
 - **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
@@ -151,6 +151,7 @@ The LED command format comes from the community reference [keenanlk/granboard-bl
 | Color Cycle | Whole ring glides along the palette (rainbow by default). |
 | Palette Steps | Whole ring steps through the palette's colours, a few seconds each (Intensity = how many colours). |
 | Chase / Rainbow Chase / Bounce | One number at a time goes round (or back and forth) in palette colours. |
+| Circular Rainbow | The board's own wave animation keeps running round the whole ring while its two colours travel through the rainbow (or the palette). Intensity = how far apart the two colours are. |
 | Circular Wipe | Numbers light one by one round the ring, then it clears. |
 | Twinkle | Random numbers blink in palette colours (Intensity = how many). |
 | Fire Flicker | Whole ring flickers through the Fire palette (Intensity = how much it dims). |
@@ -158,7 +159,7 @@ The LED command format comes from the community reference [keenanlk/granboard-bl
 
 Settings next to the light:
 
-- **Ring Palette** (select): Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Rainbow Bands, Party, Cloud, Lava, Ocean, Forest, Heat, Sunset, Rivendell, Breeze, Red & Blue, Yellowout, Analogous, Splash, Pastel, Sunset 2, Beach, Vintage, Departure, Landscape, Sherbet, Hult, Drywet, Jul, Grintage, Rewhi, Tertiary, Fire, Icefire, Ice, Cyane, Light Pink, Autumn, Magenta, Magred, Yelmag, Yelblu, Orange & Teal, Tiamat, April Night, Orangery, C9, Sakura, Aurora, Atlantica, Temperature, Retro Clown, Candy, Toxy Reaf, Fairy Reaf, Semi Blue, Pink Candy, Red Reaf, Aqua Flash, Yelblu Hot, Red Flash, Red Shift, Red Tide, Candy2. Default lets each effect use its own colours; any other palette colours Color Cycle, Palette Steps, Wave, Chase, Rainbow Chase, Bounce, Circular Wipe, Twinkle and Fire Flicker.
+- **Ring Palette** (select): Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Rainbow Bands, Party, Cloud, Lava, Ocean, Forest, Heat, Sunset, Rivendell, Breeze, Red & Blue, Yellowout, Analogous, Splash, Pastel, Sunset 2, Beach, Vintage, Departure, Landscape, Sherbet, Hult, Drywet, Jul, Grintage, Rewhi, Tertiary, Fire, Icefire, Ice, Cyane, Light Pink, Autumn, Magenta, Magred, Yelmag, Yelblu, Orange & Teal, Tiamat, April Night, Orangery, C9, Sakura, Aurora, Atlantica, Temperature, Retro Clown, Candy, Toxy Reaf, Fairy Reaf, Semi Blue, Pink Candy, Red Reaf, Aqua Flash, Yelblu Hot, Red Flash, Red Shift, Red Tide, Candy2. Default lets each effect use its own colours; any other palette colours Color Cycle, Palette Steps, Wave, Chase, Rainbow Chase, Circular Rainbow, Bounce, Circular Wipe, Twinkle and Fire Flicker.
 - **Ring Speed** (0-255, 128 = normal): faster or slower effects, but never more than 4 commands a second.
 - **Ring Intensity** (0-255): depth or density of the effect (see table).
 - **Ring Color 2** (text, `#RRGGBB`): second colour for Wave and the Colors 1&2 / Color Gradient palettes. Empty uses the opposite of the light's colour.
