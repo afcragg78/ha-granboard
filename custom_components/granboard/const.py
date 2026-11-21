@@ -22,3 +22,8 @@ CONF_LED_FX = "led_effects"
 DEFAULT_LED_FX = True
 
 STORAGE_VERSION = 1
+
+CONF_SOUND_PLAYER = "sound_player"
+CONF_SOUNDS = "sounds"
+CONF_SOUND_VOLUMES = "sound_volumes"
+EVENT_SOUND = "granboard_sound"

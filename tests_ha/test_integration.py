@@ -203,3 +203,69 @@ async def test_led_effects_follow_hits_turns_and_service(hass: HomeAssistant) ->
         assert writes == []
     coordinator._client = None
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_sounds_play_on_configured_player(hass: HomeAssistant) -> None:
+    from homeassistant.core import callback
+
+    entry = await _setup(
+        hass,
+        options={
+            "connect": False,
+            "sound_player": "media_player.game_room",
+            "sounds": {"triple_20": "/local/granboard/sounds/t20.mp3", "ton_80": "/local/granboard/sounds/180.mp3", "next_player": "/local/granboard/sounds/clear.mp3"},
+            "sound_volumes": {"ton_80": 90},
+        },
+    )
+    hass.config.external_url = "https://example.ui.nabu.casa"
+    calls = []
+
+    async def record(call):
+        calls.append((call.service, dict(call.data)))
+
+    hass.services.async_register("media_player", "play_media", record)
+    hass.services.async_register("media_player", "volume_set", record)
+    sounds = []
+    hass.bus.async_listen("granboard_sound", callback(lambda e: sounds.append(e.data["sound"])))
+    signer = patch(
+        "homeassistant.components.media_player.async_process_play_media_url", side_effect=lambda _h, u: "https://example" + u
+    )
+    signer.start()
+    await hass.services.async_call("granboard", "new_game", {"game": "501", "players": ["A", "B"]}, blocking=True)
+    await hass.services.async_call("granboard", "throw", {"segment": "T20"}, blocking=True)
+    await hass.async_block_till_done()
+    assert calls[-1][0] == "play_media" and calls[-1][1]["media_content_id"].endswith("/local/granboard/sounds/t20.mp3")
+    assert not any(c[0] == "volume_set" for c in calls)
+    await hass.services.async_call("granboard", "throw", {"segment": "T20"}, blocking=True)
+    await hass.services.async_call("granboard", "throw", {"segment": "T20"}, blocking=True)
+    await hass.async_block_till_done()
+    assert ("volume_set", {"entity_id": "media_player.game_room", "volume_level": 0.6}) in calls  # 90 % capped to 60 %
+    assert calls[-1][1]["media_content_id"].endswith("180.mp3")
+    await hass.services.async_call("granboard", "next_player", {}, blocking=True)
+    await hass.async_block_till_done()
+    signer.stop()
+    assert sounds == ["triple_20", "triple_20", "ton_80", "next_player"]
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_options_menu_sounds_and_volumes(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, options={"connect": False})
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "menu"
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "sounds"})
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"sound_player": "media_player.game_room", "winner": "/local/granboard/sounds/win.mp3", "bust": " "}
+    )
+    assert entry.options["sounds"] == {"winner": "/local/granboard/sounds/win.mp3"}
+    assert entry.options["connect"] is False  # kill switch state kept
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "volumes"})
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"winner": 50})
+    assert entry.options["sound_volumes"] == {"winner": 50}
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"button_next_player": True, "debounce_ms": 300, "led_effects": False}
+    )
+    assert entry.options["debounce_ms"] == 300 and entry.options["sounds"]["winner"].endswith("win.mp3")
+    await hass.config_entries.async_unload(entry.entry_id)

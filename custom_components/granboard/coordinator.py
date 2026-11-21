@@ -36,6 +36,9 @@ from .const import (
     CONF_CONNECT,
     CONF_DEBOUNCE_MS,
     CONF_LED_FX,
+    CONF_SOUND_PLAYER,
+    CONF_SOUND_VOLUMES,
+    CONF_SOUNDS,
     DEFAULT_BUTTON_NEXT,
     DEFAULT_DEBOUNCE_MS,
     DEFAULT_LED_FX,
@@ -43,6 +46,7 @@ from .const import (
     EVENT_AWARD,
     EVENT_BUTTON,
     EVENT_HIT,
+    EVENT_SOUND,
     EVENT_TURN,
     NOTIFY_UUID,
     SERVICE_UUID,
@@ -51,6 +55,7 @@ from .const import (
 )
 from . import led
 from .colors import to_rgb
+from .sounds import pick_sound, volume_level
 from .game import Game
 from .protocol import Button, FrameBuffer, Hit, decode_frame
 from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
@@ -349,6 +354,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self._game_changed()
         if self.led_effects:
             self.led_play(led.plan_throw(hit.as_dict(), awards, to_rgb(color)))
+        self.play_sound(hit=hit.as_dict(), awards=awards)
         self.async_update_listeners()
 
     def _event_base(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -370,6 +376,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._game_changed()
         if self.led_effects:
             self.led_play(led.plan_new_game(to_rgb(self.game.color_of(0))))
+        self.play_sound(event="game_start")
 
     @callback
     def undo(self) -> None:
@@ -393,6 +400,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             if self.led_effects:
                 steps += led.plan_next_player(to_rgb(color))
         self.led_play(steps)
+        self.play_sound(awards=awards, event=None if awards else "next_player")
 
     @callback
     def end_game(self) -> None:
@@ -400,6 +408,51 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._game_changed()
         if self.led_effects:
             self.led_play([(led.clear_command(), led.MIN_GAP_MS)])
+
+    # ------------------------------------------------------------ sounds
+    @callback
+    def play_sound(self, *, hit: dict[str, Any] | None = None, awards: list[dict[str, Any]] | None = None, event: str | None = None) -> None:
+        """Play the configured file for this moment, if any. One sound at a time."""
+        sounds: dict[str, str] = self.entry.options.get(CONF_SOUNDS) or {}
+        if not sounds:
+            return
+        awards = awards or []
+        # An award beats the turn sound; an explicit event (game start / next player) beats a plain hit.
+        key = pick_sound(sounds, hit=hit, awards=awards, event=event)
+        if key is None:
+            return
+        url = sounds[key].strip()
+        self.hass.bus.async_fire(EVENT_SOUND, self._event_base({"sound": key, "url": url}))
+        player = self.entry.options.get(CONF_SOUND_PLAYER)
+        if not player:
+            return  # dashboard / browser_mod can still play it from the granboard_sound event
+        volume = volume_level((self.entry.options.get(CONF_SOUND_VOLUMES) or {}).get(key))
+        self.entry.async_create_background_task(
+            self.hass, self._async_play(player, url, volume), name=f"{DOMAIN}-{self.address}-sound"
+        )
+
+    async def _async_play(self, player: str, url: str, volume: float | None) -> None:
+        try:
+            if url.startswith("media-source://"):
+                from homeassistant.components import media_source
+
+                resolved = await media_source.async_resolve_media(self.hass, url, player)
+                url = resolved.url
+            from homeassistant.components.media_player import async_process_play_media_url
+
+            url = async_process_play_media_url(self.hass, url)
+            if volume is not None:
+                await self.hass.services.async_call(
+                    "media_player", "volume_set", {"entity_id": player, "volume_level": min(volume, 0.6)}, blocking=True
+                )
+            await self.hass.services.async_call(
+                "media_player",
+                "play_media",
+                {"entity_id": player, "media_content_id": url, "media_content_type": "music"},
+                blocking=False,
+            )
+        except Exception as err:  # noqa: BLE001 - a sound must never break scoring
+            _LOGGER.warning("Granboard sound on %s failed: %s", player, err)
 
     # ------------------------------------------------------------ LED ring
     @property

@@ -24,12 +24,74 @@
   "options": {
     "step": {
       "init": {
+        "title": "Granboard Settings",
+        "menu_options": {
+          "general": "General",
+          "sounds": "Sounds",
+          "volumes": "Sound Volumes"
+        }
+      },
+      "general": {
+        "title": "General",
         "data": {
           "button_next_player": "Board Button Ends The Turn",
           "debounce_ms": "Repeat Hit Window (ms)",
           "led_effects": "Light The Board On Hits"
         },
         "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off). Light The Board On Hits blinks the board's LED ring in the player's colour on every dart, plays award effects and a circular wipe when the turn changes, like the Granboard app."
+      },
+      "sounds": {
+        "title": "Sounds",
+        "description": "Pick the speaker, then a sound for each moment. Put MP3s in /config/www/granboard/sounds/ and enter them as /local/granboard/sounds/name.mp3, or use a media-source:// path from Media. Leave a box empty for no sound. One sound plays per dart: an award sound wins over the hit sound, and Any Hit is used when the specific one is empty.",
+        "data": {
+          "sound_player": "Speaker",
+          "hit": "Any Hit (Fallback)",
+          "single": "Single",
+          "double": "Double",
+          "triple": "Triple",
+          "triple_20": "Triple 20",
+          "outer_bull": "Outer Bull",
+          "inner_bull": "Inner Bull (Bullseye)",
+          "miss": "Miss",
+          "ton": "Ton (100+)",
+          "ton_40": "Ton 40",
+          "high_ton": "High Ton (151+)",
+          "ton_80": "Ton 80",
+          "hat_trick": "Hat Trick",
+          "three_in_a_bed": "Three In A Bed",
+          "white_horse": "White Horse",
+          "bust": "Bust",
+          "checkout": "Checkout",
+          "winner": "Winner",
+          "next_player": "Next Player / Board Clear",
+          "game_start": "Game Start"
+        }
+      },
+      "volumes": {
+        "title": "Sound Volumes",
+        "description": "Optional volume for each sound, 0-60 %. Empty leaves the speaker's volume alone. Volume is never set above 60 %.",
+        "data": {
+          "hit": "Any Hit (Fallback)",
+          "single": "Single",
+          "double": "Double",
+          "triple": "Triple",
+          "triple_20": "Triple 20",
+          "outer_bull": "Outer Bull",
+          "inner_bull": "Inner Bull (Bullseye)",
+          "miss": "Miss",
+          "ton": "Ton (100+)",
+          "ton_40": "Ton 40",
+          "high_ton": "High Ton (151+)",
+          "ton_80": "Ton 80",
+          "hat_trick": "Hat Trick",
+          "three_in_a_bed": "Three In A Bed",
+          "white_horse": "White Horse",
+          "bust": "Bust",
+          "checkout": "Checkout",
+          "winner": "Winner",
+          "next_player": "Next Player / Board Clear",
+          "game_start": "Game Start"
+        }
       }
     }
   },

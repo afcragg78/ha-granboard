@@ -16,7 +16,19 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import CONF_BUTTON_NEXT, CONF_DEBOUNCE_MS, CONF_LED_FX, DEFAULT_BUTTON_NEXT, DEFAULT_DEBOUNCE_MS, DEFAULT_LED_FX, DOMAIN
+from .const import (
+    CONF_BUTTON_NEXT,
+    CONF_DEBOUNCE_MS,
+    CONF_LED_FX,
+    CONF_SOUND_PLAYER,
+    CONF_SOUND_VOLUMES,
+    CONF_SOUNDS,
+    DEFAULT_BUTTON_NEXT,
+    DEFAULT_DEBOUNCE_MS,
+    DEFAULT_LED_FX,
+    DOMAIN,
+)
+from .sounds import SOUND_KEYS
 from .protocol import BOARD_NAME, SERVICE_UUID
 
 _MAC = re.compile(r"^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
@@ -97,25 +109,52 @@ class GranboardConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class GranboardOptionsFlow(OptionsFlow):
-    """Board button behaviour."""
+    """General settings, sounds, and sound volumes."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["general", "sounds", "volumes"])
+
+    def _save(self, **changes: Any) -> ConfigFlowResult:
+        return self.async_create_entry(data={**self.config_entry.options, **changes})
+
+    async def async_step_general(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(data={**self.config_entry.options, **user_input})
+            return self._save(**user_input)
+        options = self.config_entry.options
         schema = vol.Schema(
             {
+                vol.Required(CONF_BUTTON_NEXT, default=options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT)): bool,
                 vol.Required(
-                    CONF_BUTTON_NEXT,
-                    default=self.config_entry.options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT),
-                ): bool,
-                vol.Required(
-                    CONF_DEBOUNCE_MS,
-                    default=int(self.config_entry.options.get(CONF_DEBOUNCE_MS, DEFAULT_DEBOUNCE_MS)),
+                    CONF_DEBOUNCE_MS, default=int(options.get(CONF_DEBOUNCE_MS, DEFAULT_DEBOUNCE_MS))
                 ): vol.All(vol.Coerce(int), vol.Range(min=0, max=2000)),
-                vol.Required(
-                    CONF_LED_FX,
-                    default=self.config_entry.options.get(CONF_LED_FX, DEFAULT_LED_FX),
-                ): bool,
+                vol.Required(CONF_LED_FX, default=options.get(CONF_LED_FX, DEFAULT_LED_FX)): bool,
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="general", data_schema=schema)
+
+    async def async_step_sounds(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            player = user_input.get(CONF_SOUND_PLAYER) or None
+            sounds = {k: str(user_input.get(k) or "").strip() for k in SOUND_KEYS if str(user_input.get(k) or "").strip()}
+            return self._save(**{CONF_SOUND_PLAYER: player, CONF_SOUNDS: sounds})
+        options = self.config_entry.options
+        current = options.get(CONF_SOUNDS) or {}
+        fields: dict[Any, Any] = {
+            vol.Optional(CONF_SOUND_PLAYER, description={"suggested_value": options.get(CONF_SOUND_PLAYER)}): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="media_player")
+            )
+        }
+        for key in SOUND_KEYS:
+            fields[vol.Optional(key, description={"suggested_value": current.get(key, "")})] = selector.TextSelector()
+        return self.async_show_form(step_id="sounds", data_schema=vol.Schema(fields))
+
+    async def async_step_volumes(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            volumes = {k: int(v) for k, v in user_input.items() if k in SOUND_KEYS and v not in (None, "")}
+            return self._save(**{CONF_SOUND_VOLUMES: volumes})
+        current = self.config_entry.options.get(CONF_SOUND_VOLUMES) or {}
+        number = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=60, step=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="%")
+        )
+        fields = {vol.Optional(key, description={"suggested_value": current.get(key)}): number for key in SOUND_KEYS}
+        return self.async_show_form(step_id="volumes", data_schema=vol.Schema(fields))

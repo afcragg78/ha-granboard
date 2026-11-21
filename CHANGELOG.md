@@ -10,11 +10,12 @@
 - Player colours: `new_game` takes `colors` (hex or names), with a default 8-colour palette. The Game sensor shows `color` per player and `current_player_color`. `granboard_hit` and `granboard_award` events carry `player` and `color`.
 - New `checkout` award when an x01 game is won (with the checkout score and whether the last dart was a double).
 - New `granboard_turn` event (player, colour, round) when the turn changes.
+- Sounds: Configure now opens a menu (General, Sounds, Sound Volumes). Pick a speaker and an MP3 for any hit, single, double, triple, Triple 20, outer bull, inner bull, miss, each award, bust, checkout, winner, next player and game start. One sound plays per dart (an award beats the hit sound). Optional volume per sound, never above 60 %; empty leaves the volume alone. Every sound also fires a `granboard_sound` event so a dashboard or browser_mod can play it instead.
 
 
 ## 0.1.1
 
-- Fix: one dart or press could count two or three times, because the board repeats the same frame within about 150 ms. An identical frame arriving within 500 ms of the last one is now ignored. Adjust it with **Repeat Hit Window (ms)** in Configure (0 turns it off). The throw service is not filtered.
+- Fix: one dart or press could count two or three times, because the board repeats the same frame within about 150 ms. An identical frame arriving within 500 ms of the last one is now ignored. Adjust it with **Repeat Hit Window (ms)** in Configure > General (0 turns it off). The throw service is not filtered.
 
 ## 0.1.0
 
