@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5
+
+- New **WLED Sections** (Configure > WLED Sections): add the lights around your board with their position (Top (20) ... Top Left (9 / 12), or a Custom Angle) and an optional Spread. Each dart lights the nearest light(s) in the player's color, with a softer glow on the neighbours. The bulls pulse every light. Awards and turn changes sweep round the lights in board order with a smooth handoff: Ton / Ton 40 / High Ton once, Ton 80 / Hat Trick twice, Bust in red, Checkout / Winner as a two-lap rainbow, and a turn change in the next player's color.
+- Every light goes back exactly as it was. WLED lights are driven and restored through WLED's JSON API with transitions (state, effect, palette and segments, without reloading presets), and other lights through `light.turn_on` from their saved state. A new dart interrupts a running animation, and the lights still return to how they were before it started. No polling.
+- Settings: **Enable WLED Sections** (default On), **Hit Flash Length** (default 700 ms) and **Only Use Lights That Are Already On** (default On: lights that are off are never touched).
+- The setup screen's example Bluetooth address is now a generic `AA:BB:CC:11:22:33`.
+
 ## 0.2.4
 
 - New integration logo and icon (shown in Home Assistant 2026.3+ via the brand folder) and a refreshed README.

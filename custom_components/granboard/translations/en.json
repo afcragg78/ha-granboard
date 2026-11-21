@@ -3,7 +3,7 @@
     "flow_title": "{name}",
     "step": {
       "user": {
-        "description": "Pick a Granboard found over Bluetooth, or type its address (for example CA:0F:52:F5:55:47). Close the Granboard phone app first; the board takes one connection at a time.",
+        "description": "Pick a Granboard found over Bluetooth, or type its address (for example AA:BB:CC:11:22:33). Close the Granboard phone app first; the board takes one connection at a time.",
         "data": {
           "address": "Board"
         }
@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "invalid_address": "That is not a Bluetooth address. Use six pairs like CA:0F:52:F5:55:47."
+      "invalid_address": "That is not a Bluetooth address. Use six pairs like AA:BB:CC:11:22:33."
     },
     "abort": {
       "already_configured": "This Granboard is already set up.",
@@ -28,7 +28,8 @@
         "menu_options": {
           "general": "General",
           "sounds": "Sounds",
-          "volumes": "Sound Volumes"
+          "volumes": "Sound Volumes",
+          "wled": "WLED Sections"
         }
       },
       "general": {
@@ -93,7 +94,63 @@
           "next_player": "Next Player / Board Clear",
           "game_start": "Game Start"
         }
+      },
+      "wled": {
+        "title": "WLED Sections",
+        "description": "Lights placed around the board light up where the dart lands, in the player's colour, and awards and turn changes sweep round them in order. Every light goes back exactly as it was afterwards.",
+        "menu_options": {
+          "wled_settings": "Settings",
+          "wled_add": "Add A Light",
+          "wled_edit": "Edit A Light",
+          "wled_remove": "Remove Lights"
+        }
+      },
+      "wled_settings": {
+        "title": "WLED Sections Settings",
+        "data": {
+          "wled_enabled": "Enable WLED Sections",
+          "wled_flash_ms": "Hit Flash Length",
+          "wled_only_on": "Only Use Lights That Are Already On"
+        },
+        "description": "Hit Flash Length is how long a hit lights the nearest lights before they go back. With Only Use Lights That Are Already On (recommended), lights that are off are never touched; turned off, a light that was off is lit for the effect and then turned back off."
+      },
+      "wled_add": {
+        "title": "Add A Light",
+        "description": "Position is where the light sits around the board, seen from the front: Top is the 20, then clockwise. Pick Custom Angle to type degrees (0 = top at the 20, 90 = right at the 6, 180 = bottom at the 3, 270 = left at the 11). Spread is how far either side the light reaches (0 = automatic, shared evenly between your lights).",
+        "data": {
+          "entity_id": "Light",
+          "position": "Position",
+          "angle": "Custom Angle (Degrees)",
+          "spread": "Spread (Degrees)"
+        }
+      },
+      "wled_edit": {
+        "title": "Edit A Light",
+        "data": {
+          "entity_id": "Light"
+        }
+      },
+      "wled_edit_light": {
+        "title": "Edit {light}",
+        "description": "Position is where the light sits around the board, seen from the front: Top is the 20, then clockwise. Pick Custom Angle to type degrees (0 = top at the 20, 90 = right at the 6, 180 = bottom at the 3, 270 = left at the 11). Spread is how far either side the light reaches (0 = automatic, shared evenly between your lights).",
+        "data": {
+          "position": "Position",
+          "angle": "Custom Angle (Degrees)",
+          "spread": "Spread (Degrees)"
+        }
+      },
+      "wled_remove": {
+        "title": "Remove Lights",
+        "data": {
+          "lights": "Lights To Remove"
+        }
       }
+    },
+    "error": {
+      "already_added": "That light is already added. Use Edit A Light to move it."
+    },
+    "abort": {
+      "light_not_found": "That light is no longer in the list."
     }
   },
   "entity": {
@@ -167,6 +224,19 @@
         "cricket": "Cricket",
         "count_up": "Count-Up",
         "around_the_clock": "Around The Clock"
+      }
+    },
+    "wled_position": {
+      "options": {
+        "top": "Top (20)",
+        "top_right": "Top Right (18 / 4)",
+        "right": "Right (6)",
+        "bottom_right": "Bottom Right (15 / 2)",
+        "bottom": "Bottom (3)",
+        "bottom_left": "Bottom Left (7 / 16)",
+        "left": "Left (11)",
+        "top_left": "Top Left (9 / 12)",
+        "custom": "Custom Angle"
       }
     }
   },

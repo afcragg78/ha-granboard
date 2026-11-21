@@ -520,3 +520,145 @@ async def test_ring_settings_entities_drive_the_light(hass: HomeAssistant) -> No
         await hass.services.async_call("light", "turn_off", {"entity_id": ring}, blocking=True)
     coordinator._client = None
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_options_flow_wled_lights(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, options={"connect": False})
+    hass.states.async_set("light.tree", "on")
+    hass.states.async_set("light.shelf", "on")
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    assert "wled" in flow["menu_options"]
+    menu = await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled"})
+    assert menu["menu_options"] == ["wled_settings", "wled_add"]
+    form = await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled_add"})
+    done = await hass.config_entries.options.async_configure(flow["flow_id"], {"entity_id": "light.tree", "position": "left", "angle": 0, "spread": 0})
+    assert done["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["wled_lights"] == [{"entity_id": "light.tree", "position": "left", "angle": 0.0, "spread": 0.0}]
+
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled"})
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled_add"})
+    dup = await hass.config_entries.options.async_configure(flow["flow_id"], {"entity_id": "light.tree", "position": "top"})
+    assert dup["errors"] == {"entity_id": "already_added"}
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"entity_id": "light.shelf", "position": "custom", "angle": 100, "spread": 60})
+
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    menu = await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled"})
+    assert menu["menu_options"] == ["wled_settings", "wled_add", "wled_edit", "wled_remove"]
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled_edit"})
+    form = await hass.config_entries.options.async_configure(flow["flow_id"], {"entity_id": "light.tree"})
+    assert form["step_id"] == "wled_edit_light"
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"position": "top_right", "angle": 0, "spread": 30})
+    assert entry.options["wled_lights"][0]["position"] == "top_right" and entry.options["wled_lights"][0]["spread"] == 30
+    assert entry.options["wled_lights"][1] == {"entity_id": "light.shelf", "position": "custom", "angle": 100.0, "spread": 60.0}
+
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled"})
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled_settings"})
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"wled_enabled": True, "wled_flash_ms": 900, "wled_only_on": True})
+    assert entry.options["wled_flash_ms"] == 900 and entry.runtime_data.wled.flash_ms == 900
+
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled"})
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"next_step_id": "wled_remove"})
+    await hass.config_entries.options.async_configure(flow["flow_id"], {"lights": ["light.tree"]})
+    assert [l["entity_id"] for l in entry.options["wled_lights"]] == ["light.shelf"]
+    assert entry.options["connect"] is False  # other options kept
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_wled_sections_flash_and_restore_only_lights_that_were_on(hass: HomeAssistant) -> None:
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    lights = [
+        {"entity_id": "light.top", "position": "top"},
+        {"entity_id": "light.right", "position": "right"},
+        {"entity_id": "light.bottom", "position": "bottom"},
+        {"entity_id": "light.left", "position": "left"},
+    ]
+    entry = await _setup(hass, options={"connect": False, "wled_lights": lights, "wled_flash_ms": 200})
+    hass.states.async_set("light.top", "on", {"color_mode": "rgb", "rgb_color": (10, 20, 30), "brightness": 77,
+                                              "effect": "Solid", "effect_list": ["Solid", "Rainbow"]})
+    hass.states.async_set("light.right", "on", {"color_mode": "color_temp", "color_temp_kelvin": 3000, "brightness": 200})
+    hass.states.async_set("light.bottom", "off", {})
+    hass.states.async_set("light.left", "on", {"color_mode": "hs", "hs_color": (120, 50), "brightness": 10,
+                                               "effect": "Rainbow", "effect_list": ["Solid", "Rainbow"]})
+    on = async_mock_service(hass, "light", "turn_on")
+    off = async_mock_service(hass, "light", "turn_off")
+    coordinator = entry.runtime_data
+
+    async def wait_done():
+        task = coordinator.wled._task
+        if task is not None:
+            await task
+        await hass.async_block_till_done()
+
+    await hass.services.async_call("granboard", "throw", {"segment": "S20"}, blocking=True)
+    await wait_done()
+    by = [(c.data["entity_id"], c.data) for c in on]
+    flashes = {e: d["brightness"] for e, d in by if d.get("rgb_color") == [255, 0, 0]}
+    # Three lights are on (120 degrees each): the top is full, its neighbours glow softly.
+    assert flashes["light.top"] == 255 and 0 < flashes["light.right"] < 255 and 0 < flashes["light.left"] < 255
+    restored = {e: d for e, d in by if d.get("rgb_color") != [255, 0, 0]}
+    assert restored["light.top"] == {"entity_id": "light.top", "transition": 0.2, "brightness": 77, "rgb_color": [10, 20, 30]}
+    assert all(e != "light.bottom" for e, _ in by) and not off
+    on.clear()
+
+    # A turn change sweeps round the lights that are on, in board order, and puts each back.
+    await hass.services.async_call("granboard", "new_game", {"game": "501", "players": ["A", "B"], "colors": ["red", "blue"]}, blocking=True)
+    await wait_done()
+    on.clear()
+    await hass.services.async_call("granboard", "next_player", {}, blocking=True)
+    await wait_done()
+    sets = [c.data["entity_id"] for c in on if c.data.get("rgb_color") == [0, 0, 255]]
+    assert sets == ["light.top", "light.right", "light.left"]  # bottom is off: skipped
+    restores = {c.data["entity_id"]: c.data for c in on if c.data.get("rgb_color") != [0, 0, 255]}
+    assert restores["light.right"]["color_temp_kelvin"] == 3000 and restores["light.right"]["brightness"] == 200
+    assert restores["light.left"]["effect"] == "Rainbow" and restores["light.left"]["hs_color"] == [120, 50]
+    assert not off
+    on.clear()
+
+    # A new hit interrupts a running sweep; the lights still go back to the original look.
+    coordinator.wled.turn((0, 255, 0))
+    await asyncio_sleep(0.05)
+    coordinator.wled.throw({"ring": "single_inner", "number": 11}, [], (255, 0, 0))
+    await wait_done()
+    last = {c.data["entity_id"]: c.data for c in on}
+    assert last["light.top"]["rgb_color"] == [10, 20, 30]
+    assert last["light.left"]["effect"] == "Rainbow"
+
+    # Switched off in Configure: nothing happens.
+    on.clear()
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "wled_enabled": False})
+    await hass.services.async_call("granboard", "throw", {"segment": "T20"}, blocking=True)
+    await wait_done()
+    assert not on
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def asyncio_sleep(seconds):
+    import asyncio
+
+    await asyncio.sleep(seconds)
+
+
+async def test_wled_sections_use_wled_json_api(hass: HomeAssistant, aioclient_mock) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    wled_entry = MockConfigEntry(domain="wled", data={"host": "10.0.0.50"})
+    wled_entry.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create("light", "wled", "aabbccddeeff", config_entry=wled_entry, suggested_object_id="tree")
+    hass.states.async_set("light.tree", "on", {"brightness": 128})
+    saved = {"on": True, "bri": 128, "ps": 3, "seg": [{"id": 0, "n": "Tree", "col": [[1, 2, 3]], "fx": 9, "pal": 6}]}
+    aioclient_mock.get("http://10.0.0.50/json/state", json=saved)
+    aioclient_mock.post("http://10.0.0.50/json/state", json={"success": True})
+    entry = await _setup(hass, options={"connect": False, "wled_lights": [{"entity_id": "light.tree", "position": "top"}], "wled_flash_ms": 200})
+    coordinator = entry.runtime_data
+    coordinator.wled.throw({"ring": "double", "number": 20}, [], (255, 0, 0))
+    await coordinator.wled._task
+    posts = [call[2] for call in aioclient_mock.mock_calls if call[0] == "POST"]
+    assert posts[0] == {"on": True, "bri": 255, "tt": 1, "seg": [{"id": 0, "col": [[255, 0, 0]], "fx": 0}]}
+    assert posts[-1]["on"] is True and posts[-1]["bri"] == 128
+    assert posts[-1]["seg"] == [{"id": 0, "col": [[1, 2, 3]], "fx": 9, "pal": 6}]  # no preset reload, name untouched
+    assert "ps" not in posts[-1]
+    await hass.config_entries.async_unload(entry.entry_id)

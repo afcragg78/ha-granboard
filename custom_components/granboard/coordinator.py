@@ -62,6 +62,7 @@ from .sounds import pick_sound, volume_level
 from .game import Game
 from .protocol import Button, FrameBuffer, Hit, decode_frame
 from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
+from .wled_sections import WledSections
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -105,6 +106,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         # LED Ring settings shared by the Ring Palette / Speed / Intensity / Color 2 entities.
         self.ring_settings: dict[str, Any] = {"palette": "Default", "speed": 128, "intensity": 128, "color2": ""}
         self._ring_listeners: list[Callable[[], None]] = []
+        self.wled = WledSections(hass, entry)
         self._write_response = False
         self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None
@@ -182,6 +184,8 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self._ble_unsub()
             self._ble_unsub = None
         await self._stop_loop()
+        with contextlib.suppress(Exception):
+            await self.wled.async_stop()
         await self._store.async_save(self.game.dump())
         await super().async_shutdown()
 
@@ -370,6 +374,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self._game_changed()
         if self.led_effects:
             self.led_play(led.plan_throw(hit.as_dict(), awards, to_rgb(color)))
+        self._wled_safely(self.wled.throw, hit.as_dict(), awards, to_rgb(color))
         self.play_sound(hit=hit.as_dict(), awards=awards)
         self.async_update_listeners()
 
@@ -415,8 +420,18 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             )
             if self.led_effects:
                 steps += led.plan_next_player(to_rgb(color))
+            if not awards:
+                self._wled_safely(self.wled.turn, to_rgb(color))
+        if awards:
+            self._wled_safely(self.wled.throw, {}, awards, to_rgb(awards[0].get("color") or self.game.color_of(None)))
         self.led_play(steps)
         self.play_sound(awards=awards, event=None if awards else "next_player")
+
+    def _wled_safely(self, func: Callable[..., None], *args: Any) -> None:
+        try:
+            func(*args)
+        except Exception:  # noqa: BLE001 - room lights must never break scoring
+            _LOGGER.exception("Granboard %s WLED Sections failed", self.address)
 
     @callback
     def end_game(self) -> None:

@@ -29,3 +29,9 @@ CONF_SOUND_PLAYER = "sound_player"
 CONF_SOUNDS = "sounds"
 CONF_SOUND_VOLUMES = "sound_volumes"
 EVENT_SOUND = "granboard_sound"
+
+CONF_WLED_LIGHTS = "wled_lights"
+CONF_WLED_ENABLED = "wled_enabled"
+CONF_WLED_FLASH_MS = "wled_flash_ms"
+DEFAULT_WLED_FLASH_MS = 700
+CONF_WLED_ONLY_ON = "wled_only_on"

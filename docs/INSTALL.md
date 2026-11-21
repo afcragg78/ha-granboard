@@ -18,11 +18,12 @@ This guide walks you through everything from a fresh install to lights, sounds, 
 10. [Playing Games (Actions)](#10-playing-games-actions)
 11. [Board Lights During Games](#11-board-lights-during-games)
 12. [LED Ring Light (Between Games)](#12-led-ring-light-between-games)
-13. [WLED And Room Lights Automations](#13-wled-and-room-lights-automations)
-14. [Dashboard Examples](#14-dashboard-examples)
-15. [Updating](#15-updating)
-16. [Troubleshooting](#16-troubleshooting)
-17. [Uninstalling](#17-uninstalling)
+13. [WLED Sections (Lights Around The Board)](#13-wled-sections-lights-around-the-board)
+14. [WLED And Room Lights Automations](#14-wled-and-room-lights-automations)
+15. [Dashboard Examples](#15-dashboard-examples)
+16. [Updating](#16-updating)
+17. [Troubleshooting](#17-troubleshooting)
+18. [Uninstalling](#18-uninstalling)
 
 ---
 
@@ -146,11 +147,11 @@ Find them on the device page: **Settings > Devices & Services > Granboard > (you
 | Number **Ring Intensity** | `number.<board>_ring_intensity` | 0 to 255, default 128 (configuration). |
 | Text **Ring Color 2** | `text.<board>_ring_color_2` | Second color as `#RRGGBB`, empty by default (configuration). |
 
-**Events** (for automations): `granboard_hit`, `granboard_award`, `granboard_turn`, `granboard_button` and `granboard_sound`. See [section 13](#13-wled-and-room-lights-automations) and the README's Events list.
+**Events** (for automations): `granboard_hit`, `granboard_award`, `granboard_turn`, `granboard_button` and `granboard_sound`. See [section 14](#14-wled-and-room-lights-automations) and the README's Events list.
 
 ## 7. Configure Options
 
-Go to **Settings > Devices & Services > Granboard > Configure** (on newer versions, the ⚙ cog next to the entry). A menu offers **General**, **Sounds** and **Sound Volumes**. Changes apply right away, with no restart needed.
+Go to **Settings > Devices & Services > Granboard > Configure** (on newer versions, the ⚙ cog next to the entry). A menu offers **General**, **Sounds**, **Sound Volumes** and **WLED Sections**. Changes apply right away, with no restart needed.
 
 ### General
 
@@ -164,6 +165,10 @@ Go to **Settings > Devices & Services > Granboard > Configure** (on newer versio
 ### Sounds And Sound Volumes
 
 See [section 8](#8-custom-sounds).
+
+### WLED Sections
+
+See [section 13](#13-wled-sections-lights-around-the-board).
 
 ## 8. Custom Sounds
 
@@ -421,7 +426,69 @@ The light's on/off, color, brightness and effect, and all four settings, are res
 - **No still per-number colors.** With the known commands the board can't hold different numbers in different colors (number blinks turn themselves off), so a palette shows up over time or as moving numbers, not as a still rainbow around the ring.
 - Brightness is applied by dimming the color, because the board has no brightness setting.
 
-## 13. WLED And Room Lights Automations
+## 13. WLED Sections (Lights Around The Board)
+
+If you have several lights around the board (WLED strips, bulbs, or any Home Assistant light), the integration can make them react **where the dart lands**: the lights nearest the number glow in the player's color, with neighbouring lights getting a softer glow so it feels like one continuous light. Awards and turn changes send a light **sweeping round the board** from one light to the next.
+
+### Set It Up
+
+1. Go to **Settings > Devices & Services > Granboard > Configure > WLED Sections**.
+2. Choose **Add A Light**:
+   - **Light**: pick the light. Any light works; WLED lights are smoother (see below).
+   - **Position**: where it sits around the board as you face it: **Top (20)**, **Top Right (18 / 4)**, **Right (6)**, **Bottom Right (15 / 2)**, **Bottom (3)**, **Bottom Left (7 / 16)**, **Left (11)**, **Top Left (9 / 12)**, or **Custom Angle**.
+   - **Custom Angle (Degrees)**: only used with Custom Angle. 0 is the top (the 20), then clockwise: 90 is the 6, 180 is the 3, 270 is the 11. Each number is 18° apart.
+   - **Spread (Degrees)**: how far either side of its position the light reacts. Leave 0 for automatic (360° shared evenly between the lights that are on). Use a bigger number for a long strip, a smaller one for a spot.
+3. Repeat for each light. **Edit A Light** moves one, and **Remove Lights** takes lights out.
+4. Optional, under **Settings**:
+
+| Option | Default | What It Does |
+|---|---|---|
+| **Enable WLED Sections** | On | Master switch. It does nothing until at least one light is added. |
+| **Hit Flash Length** | 700 ms | How long a hit lights the nearest lights before they go back (200 to 5000 ms). |
+| **Only Use Lights That Are Already On** | On | Lights that are off are never touched. If you switch this off, a light that was off is lit for the effect and then turned back off. |
+
+```
+                      Top (20)  0°
+      Top Left (9 / 12)            Top Right (18 / 4)
+            315°                          45°
+
+   Left (11)  270°          ●          90°  Right (6)
+
+            225°                          135°
+     Bottom Left (7 / 16)          Bottom Right (15 / 2)
+                     Bottom (3)  180°
+```
+
+Numbers clockwise from the top, with their angles: 20 (0°), 1 (18°), 18 (36°), 4 (54°), 13 (72°), 6 (90°), 10 (108°), 15 (126°), 2 (144°), 17 (162°), 3 (180°), 19 (198°), 7 (216°), 16 (234°), 8 (252°), 11 (270°), 14 (288°), 9 (306°), 12 (324°), 5 (342°).
+
+**Example:** two strips on the sides of the cabinet and one above the board. Add the top light as **Top (20)**, the left strip as **Left (11)** and the right strip as **Right (6)**. A dart in the 20 lights the top light; a T6 lights the right strip; a dart in the 13 (72°) lights the right strip fully and the top light softly. A Ton 80 sends the light round top → right → left, twice.
+
+
+### What The Lights Do
+
+| Moment | Lights |
+|---|---|
+| A single, double or triple | The light(s) nearest that number glow in the player's color; neighbours glow softer. |
+| Outer Bull / Bullseye | Every light pulses (twice for the bullseye). |
+| Ton, Ton 40, High Ton | One sweep round the lights in the player's color. |
+| Ton 80, Hat Trick | Two sweeps. |
+| Bust | One red sweep. |
+| Checkout / Winner | Two rainbow sweeps. |
+| Turn change | One sweep in the next player's color. |
+
+A sweep goes round the board in order (clockwise from the top). Each light comes on as the previous one fades back, so it looks like one light travelling round. A new dart interrupts a running sweep straight away.
+
+### Every Light Goes Back Exactly As It Was
+
+- Before an effect, the integration remembers each light's state. Afterwards, it puts every light back (on or off, brightness, color, and the WLED effect, palette and segments).
+- If one effect interrupts another, the lights still go back to how they were *before the first one*.
+- **WLED lights** (from Home Assistant's WLED integration) are driven through WLED's own JSON API on your network, using WLED transitions, so animations are smooth. Their exact WLED state is saved and restored, without reloading presets. A WLED segment light only changes its own segment.
+- Other lights use `light.turn_on` with a transition, and are restored from their saved Home Assistant state.
+- Nothing polls: state is read once when an effect starts.
+
+**Tip:** if you already have your own automations that flash WLED on `granboard_hit`, turn them off when you use WLED Sections, or both will fight over the lights.
+
+## 14. WLED And Room Lights Automations
 
 The integration fires events you can use in automations:
 
@@ -432,7 +499,7 @@ The integration fires events you can use in automations:
 | `granboard_turn` | `player`, `player_index`, `color`, `round` when the turn changes |
 | `granboard_button` | The board button was pressed |
 
-In the examples below, replace `light.your_wled` with your own light. They only act on lights that are **already on**, and they put the light back the way it was using a scene snapshot.
+For lights placed around the board, [WLED Sections](#13-wled-sections-lights-around-the-board) does this without any automations. For anything else, use the events. In the examples below, replace `light.your_wled` with your own light. They only act on lights that are **already on**, and they put the light back the way it was using a scene snapshot.
 
 **Flash the thrower's color on every hit, then restore:**
 
@@ -525,7 +592,7 @@ automation:
           rgb_color: "{{ [hex[0:2] | int(base=16), hex[2:4] | int(base=16), hex[4:6] | int(base=16)] }}"
 ```
 
-## 14. Dashboard Examples
+## 15. Dashboard Examples
 
 Replace `<board>` with your device's ID part (for example `granboard_5547`).
 
@@ -637,7 +704,7 @@ styles:
     - border: "[[[ return entity.attributes.effect === 'Fire Flicker' ? '2px solid var(--primary-color)' : 'none' ]]]"
 ```
 
-## 15. Updating
+## 16. Updating
 
 **HACS:**
 
@@ -648,7 +715,7 @@ styles:
 
 **Manual:** replace `/config/custom_components/granboard` with the new folder and restart.
 
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 ### Some Hits Aren't Counted
 
@@ -703,7 +770,7 @@ logger:
 
 This logs every raw frame from the board, every Bluetooth characteristic found when connecting, and LED write problems. Remove it when you're done, because it's chatty.
 
-## 17. Uninstalling
+## 18. Uninstalling
 
 1. **Settings > Devices & Services > Granboard > ⋮ > Delete**. This disconnects and releases the board right away.
 2. In **HACS**, open **Granboard > ⋮ > Remove**. For a manual install, delete `/config/custom_components/granboard`.

@@ -30,6 +30,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - **Player Colors** – each player gets a sharp, fully saturated color on the board and on your lights.
 - **Board Lighting** – hit flashes, award effects (Bullseye, Ton 80, Hat Trick and more), and the circular wipe between turns, like the official app.
 - **LED Ring Light** – use the board's ring as a light between games, with 15 effects and 64 WLED-style palettes.
+- **WLED Sections** – add lights placed around the board in Configure: the lights nearest each dart glow in the player's color, and awards and turn changes sweep round them, then every light goes back exactly as it was.
 - **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
 - **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
 - **App Kill Switch** – release the board with one tap so the official Granboard app can connect.
@@ -46,6 +47,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - [Services](#services)
 - [Board Lights](#board-lights)
 - [LED Ring Light](#led-ring-light)
+- [WLED Sections](#wled-sections)
 - [Sounds](#sounds)
 - [Protocol](#protocol)
 - [Credits](#credits)
@@ -168,6 +170,17 @@ How it behaves:
 - When a game starts the light pauses (`paused_for_game: true`) and the game lights take over. When the game ends or is cleared, the light comes back.
 - A dart outside a game flashes as usual, then the light comes back.
 - Nothing is sent while the board is released or offline; the light is re-applied when it reconnects.
+
+## WLED Sections
+
+Put several lights around the board (WLED strips, bulbs, any light) and add them in **Configure > WLED Sections > Add A Light** with their **Position** (Top (20), Top Right (18 / 4), Right (6), Bottom Right (15 / 2), Bottom (3), Bottom Left (7 / 16), Left (11), Top Left (9 / 12), or a Custom Angle where 0° is the 20 and angles go clockwise, 18° per number) and an optional **Spread**.
+
+- A dart lights the nearest light(s) in the player's color, with neighbours glowing softer. The bulls pulse every light.
+- Ton / Ton 40 / High Ton sweep once round the lights in board order, Ton 80 and Hat Trick twice, a bust sweeps red, and a checkout or winner sweeps a rainbow twice. A turn change sweeps in the next player's color. Each light comes on as the previous one fades back.
+- Afterwards every light goes back exactly as it was. WLED lights are driven and restored through WLED's JSON API (state, effect, palette and segments; presets aren't reloaded), and other lights from their saved state. A new dart interrupts a running sweep.
+- **Only Use Lights That Are Already On** (default On) means lights that are off are never touched. **Hit Flash Length** (default 700 ms) and **Enable WLED Sections** (default On) are under Settings.
+
+Full setup, a positions diagram and examples are in the [guide](docs/INSTALL.md#13-wled-sections-lights-around-the-board).
 
 ## Sounds
 
