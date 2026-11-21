@@ -29,6 +29,7 @@ If the connection drops, move an ESPHome Bluetooth proxy close to the board.
 | Sensor **Last Raw Frame** | The last frame exactly as received (diagnostic). |
 | Sensor **Signal Strength** | RSSI from the last advertisement (diagnostic). The board stops advertising while connected, so this updates only while it is not. |
 | Light **LED Ring** | The board's LED ring as a light between games (see LED Ring Light below). |
+| Select **Ring Palette**, Numbers **Ring Speed** / **Ring Intensity**, Text **Ring Color 2** | LED Ring effect settings (configuration). |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
 
 ## Events
@@ -104,9 +105,33 @@ The LED command format comes from the community reference [keenanlk/granboard-bl
 
 ## LED Ring Light
 
-**LED Ring** (`light.<board>_led_ring`, e.g. `light.granboard_5547_led_ring`) turns the board's LED ring into a WLED-style light when no game is playing. Pick a colour, a brightness and an effect: **Solid**, **Blink**, **Wave** (your colour and its opposite), **Color Cycle**, **Chase**, **Rainbow Chase** or **Circular Wipe**.
+**LED Ring** (`light.<board>_led_ring`, e.g. `light.granboard_5547_led_ring`) turns the board's LED ring into a WLED-style light when no game is playing. Pick a colour, a brightness and an effect.
 
-- Loop effects are slow on purpose (at most 4 writes a second) so the board keeps reading darts.
+| Effect | What it does |
+|---|---|
+| Solid | Whole ring in one colour (one command, then nothing more is sent). |
+| Blink / Heartbeat / Lightning | Whole-ring flashes: steady, double beat, random strikes (Intensity = how often). |
+| Breathe | Whole ring steps dimmer and brighter (Intensity = how deep). |
+| Wave | The board's wave in Color 1 and Color 2, or palette pairs. |
+| Color Cycle | Whole ring glides along the palette (rainbow by default). |
+| Palette Steps | Whole ring steps through the palette's colours, a few seconds each (Intensity = how many colours). |
+| Chase / Rainbow Chase / Bounce | One number at a time goes round (or back and forth) in palette colours. |
+| Circular Wipe | Numbers light one by one round the ring, then it clears. |
+| Twinkle | Random numbers blink in palette colours (Intensity = how many). |
+| Fire Flicker | Whole ring flickers through the Fire palette (Intensity = how much it dims). |
+| Police | Whole ring flashes red, then blue. |
+
+Settings next to the light:
+
+- **Ring Palette** (select): Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Rainbow Bands, Party, Cloud, Lava, Ocean, Forest, Heat, Sunset, Rivendell, Breeze, Red & Blue, Yellowout, Analogous, Splash, Pastel, Sunset 2, Beach, Vintage, Departure, Landscape, Sherbet, Hult, Drywet, Jul, Grintage, Rewhi, Tertiary, Fire, Icefire, Ice, Cyane, Light Pink, Autumn, Magenta, Magred, Yelmag, Yelblu, Orange & Teal, Tiamat, April Night, Orangery, C9, Sakura, Aurora, Atlantica, Temperature, Retro Clown, Candy, Toxy Reaf, Fairy Reaf, Semi Blue, Pink Candy, Red Reaf, Aqua Flash, Yelblu Hot, Red Flash, Red Shift, Red Tide, Candy2. Default lets each effect use its own colours; any other palette colours Color Cycle, Palette Steps, Wave, Chase, Rainbow Chase, Bounce, Circular Wipe, Twinkle and Fire Flicker.
+- **Ring Speed** (0-255, 128 = normal): faster or slower effects, but never more than 4 commands a second.
+- **Ring Intensity** (0-255): depth or density of the effect (see table).
+- **Ring Color 2** (text, `#RRGGBB`): second colour for Wave and the Colors 1&2 / Color Gradient palettes. Empty uses the opposite of the light's colour.
+
+How it behaves:
+
+- The board cannot hold different numbers in different colours with a documented command (number blinks turn themselves off, and the number-state command has only one confirmed colour), so a palette is shown over time on the whole ring, or as moving / twinkling numbers, not as a still rainbow around the ring.
+- Effects are slow on purpose (250 ms or more between commands) so the board keeps reading darts, and a whole-ring colour that has not changed is not sent again.
 - When a game starts the light pauses (`paused_for_game: true`) and the game lights take over. When the game ends or is cleared, the light comes back.
 - A dart outside a game flashes as usual, then the light comes back.
 - Nothing is sent while the board is released or offline; the light is re-applied when it reconnects.

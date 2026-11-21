@@ -102,6 +102,9 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._led_idle = asyncio.Event()
         self._led_idle.set()
         self._led_listeners: list[Callable[[], None]] = []
+        # LED Ring settings shared by the Ring Palette / Speed / Intensity / Color 2 entities.
+        self.ring_settings: dict[str, Any] = {"palette": "Default", "speed": 128, "intensity": 128, "color2": ""}
+        self._ring_listeners: list[Callable[[], None]] = []
         self._write_response = False
         self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None
@@ -487,6 +490,28 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
                 self._led_listeners.remove(listener)
 
         return _remove
+
+    @callback
+    def add_ring_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        """Called when a Ring Palette / Speed / Intensity / Color 2 setting changes."""
+        self._ring_listeners.append(listener)
+
+        def _remove() -> None:
+            with contextlib.suppress(ValueError):
+                self._ring_listeners.remove(listener)
+
+        return _remove
+
+    @callback
+    def set_ring_setting(self, key: str, value: Any) -> None:
+        if self.ring_settings.get(key) == value:
+            return
+        self.ring_settings[key] = value
+        for listener in list(self._ring_listeners):
+            try:
+                listener()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Granboard %s ring listener failed", self.address)
 
     async def async_led_idle(self) -> None:
         """Wait until every queued LED command has been written."""

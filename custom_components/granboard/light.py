@@ -27,7 +27,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from . import led
+from . import effects, led
+from .colors import parse_color, to_rgb
 from .const import DOMAIN
 from .coordinator import GranboardConfigEntry, GranboardCoordinator
 from .entity import GranboardEntity
@@ -47,17 +48,18 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
     _attr_color_mode = ColorMode.RGB
     _attr_supported_color_modes = {ColorMode.RGB}
     _attr_supported_features = LightEntityFeature.EFFECT
-    _attr_effect_list = list(led.AMBIENT_EFFECTS)
+    _attr_effect_list = list(effects.EFFECTS)
 
     def __init__(self, coordinator: GranboardCoordinator, key: str) -> None:
         super().__init__(coordinator, key)
         self._attr_is_on = False
         self._attr_rgb_color = (255, 255, 255)
         self._attr_brightness = 255
-        self._attr_effect = led.EFFECT_SOLID
+        self._attr_effect = effects.SOLID
         self._task: asyncio.Task[None] | None = None
         self._ring_context: tuple[bool, bool] | None = None
         self._unsub_led: Any = None
+        self._unsub_ring: Any = None
 
     # ------------------------------------------------------------ lifecycle
     async def async_added_to_hass(self) -> None:
@@ -70,9 +72,10 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
                 self._attr_rgb_color = tuple(int(c) for c in rgb)
             if last.attributes.get(ATTR_BRIGHTNESS) is not None:
                 self._attr_brightness = int(last.attributes[ATTR_BRIGHTNESS])
-            if last.attributes.get(ATTR_EFFECT) in led.AMBIENT_EFFECTS:
+            if last.attributes.get(ATTR_EFFECT) in effects.EFFECTS:
                 self._attr_effect = last.attributes[ATTR_EFFECT]
         self._unsub_led = self.coordinator.add_led_listener(self._on_game_led)
+        self._unsub_ring = self.coordinator.add_ring_listener(self._on_ring_settings)
         self._ring_context = self._current_context()
         self._restart()
 
@@ -80,6 +83,9 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
         if self._unsub_led is not None:
             self._unsub_led()
             self._unsub_led = None
+        if self._unsub_ring is not None:
+            self._unsub_ring()
+            self._unsub_ring = None
         self._cancel()
         await super().async_will_remove_from_hass()
 
@@ -103,7 +109,7 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
             self._attr_rgb_color = tuple(int(c) for c in kwargs[ATTR_RGB_COLOR])
         if ATTR_BRIGHTNESS in kwargs:
             self._attr_brightness = int(kwargs[ATTR_BRIGHTNESS])
-        if kwargs.get(ATTR_EFFECT) in led.AMBIENT_EFFECTS:
+        if kwargs.get(ATTR_EFFECT) in effects.EFFECTS:
             self._attr_effect = kwargs[ATTR_EFFECT]
         self._attr_is_on = True
         self._restart()
@@ -136,6 +142,24 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
             self._restart(delay=RESUME_DELAY_S)
 
     @callback
+    def _on_ring_settings(self) -> None:
+        """Palette, speed, intensity or Color 2 changed: show it now."""
+        if self._attr_is_on and self._attr_effect != effects.SOLID:
+            self._restart()
+
+    def _options(self) -> effects.RingOptions:
+        settings = self.coordinator.ring_settings
+        color2 = parse_color(settings.get("color2")) if settings.get("color2") else None
+        return effects.RingOptions(
+            color=tuple(self._attr_rgb_color or (255, 255, 255)),  # type: ignore[arg-type]
+            brightness=self._attr_brightness if self._attr_brightness is not None else 255,
+            color2=to_rgb(color2) if color2 else None,
+            palette=str(settings.get("palette") or "Default"),
+            speed=int(settings.get("speed", effects.DEFAULT_SPEED)),
+            intensity=int(settings.get("intensity", effects.DEFAULT_INTENSITY)),
+        )
+
+    @callback
     def _cancel(self) -> None:
         task, self._task = self._task, None
         if task is not None and not task.done():
@@ -152,28 +176,23 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
 
     async def _run(self, delay: float) -> None:
         """Apply the light: one write for Solid, a slow loop for the others."""
-        effect = self._attr_effect or led.EFFECT_SOLID
-        color = tuple(self._attr_rgb_color or (255, 255, 255))
-        brightness = self._attr_brightness if self._attr_brightness is not None else 255
+        effect = self._attr_effect or effects.SOLID
+        steps = effects.frames(effect, self._options())
         last: bytes | None = None
-        step = 0
         try:
             await self.coordinator.async_led_idle()
             if delay:
                 await asyncio.sleep(delay)
-            while self._should_run():
-                frame = led.ambient_frame(effect, color, brightness, step)  # type: ignore[arg-type]
-                if frame is None:
+            for cmd, wait_ms in steps:
+                if not self._should_run():
                     return
-                cmd, wait_ms = frame
                 await self.coordinator.async_led_idle()
                 if not self._should_run():
                     return
-                # Unchanged frames are not re-sent, except effects that replay and stop.
-                if cmd != last or effect in led.RETRIGGER_EFFECTS:
+                # A whole-ring colour that has not changed is not re-sent.
+                if cmd != last or effect not in effects.HOLD_EFFECTS:
                     self.coordinator.led_play([(cmd, led.MIN_GAP_MS)], ambient=True)
                     last = cmd
-                step += 1
                 await asyncio.sleep(max(led.AMBIENT_MIN_GAP_MS, wait_ms) / 1000)
         except asyncio.CancelledError:
             raise

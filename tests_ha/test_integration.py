@@ -321,7 +321,7 @@ async def test_led_ring_light_solid_pause_and_resume(hass: HomeAssistant) -> Non
     with patch(f"{CO}.asyncio.sleep", new=fast_sleep):
         entry, coordinator, writes = await _ring_setup(hass)
         assert hass.states.get(ring).state == "off"
-        assert hass.states.get(ring).attributes["effect_list"][:3] == ["Solid", "Blink", "Wave"]
+        assert hass.states.get(ring).attributes["effect_list"][:3] == ["Solid", "Blink", "Breathe"]
         await hass.services.async_call(
             "light", "turn_on", {"entity_id": ring, "rgb_color": [255, 0, 0], "brightness": 128}, blocking=True
         )
@@ -450,3 +450,73 @@ async def test_led_ring_restores_last_state(hass: HomeAssistant) -> None:
     assert coordinator._led_listeners  # listening for game effects
     await hass.config_entries.async_unload(entry.entry_id)
     assert not coordinator._led_listeners
+
+
+async def test_ring_settings_entities_drive_the_light(hass: HomeAssistant) -> None:
+    import asyncio
+
+    from homeassistant.exceptions import HomeAssistantError
+    from pytest_homeassistant_custom_component.common import mock_restore_cache_with_extra_data
+
+    from homeassistant.core import State
+
+    from custom_components.granboard import led
+    from custom_components.granboard import palettes as P
+
+    dev = "granboard_5547"
+    mock_restore_cache_with_extra_data(
+        hass,
+        [(State(f"select.{dev}_ring_palette", "Ocean"), {}), (State(f"text.{dev}_ring_color_2", "#00ff00"), {}),
+         (State(f"number.{dev}_ring_speed", "200"), {"native_value": 200, "native_min_value": 0, "native_max_value": 255,
+                                                       "native_step": 1, "native_unit_of_measurement": None})],
+    )
+    real_sleep = asyncio.sleep
+    gate = asyncio.Event()
+    gaps: list[float] = []
+
+    async def fake_sleep(seconds, *args):
+        if 0.25 <= seconds < 1:
+            gaps.append(seconds)
+            if len(gaps) >= 2:
+                await gate.wait()
+        await real_sleep(0)
+
+    with patch(f"{CO}.asyncio.sleep", new=fake_sleep):
+        entry, coordinator, writes = await _ring_setup(hass)
+        assert hass.states.get(f"select.{dev}_ring_palette").state == "Ocean"
+        assert "Orange & Teal" in hass.states.get(f"select.{dev}_ring_palette").attributes["options"]
+        assert hass.states.get(f"number.{dev}_ring_speed").state == "200.0"
+        assert hass.states.get(f"number.{dev}_ring_intensity").state == "128.0"
+        assert hass.states.get(f"text.{dev}_ring_color_2").state == "#00ff00"
+        assert coordinator.ring_settings == {"palette": "Ocean", "speed": 200, "intensity": 128, "color2": "#00ff00"}
+
+        ring = f"light.{dev}_led_ring"
+        await hass.services.async_call("light", "turn_on", {"entity_id": ring, "rgb_color": [255, 0, 0], "effect": "Chase"}, blocking=True)
+        for _ in range(30):
+            await real_sleep(0)
+        first = P.color_at("Ocean", 0, (255, 0, 0), (0, 255, 0))
+        assert writes[0][0] == led.HIT_SINGLE and writes[0][1:4] == bytes(first)
+        assert gaps[0] == 0.25  # speed 200 hits the 250 ms floor, never faster
+
+        # Changing the palette restarts the effect in the new colours.
+        task = hass.data["light"].get_entity(ring)._task
+        writes.clear()
+        gaps.clear()
+        await hass.services.async_call("select", "select_option", {"entity_id": f"select.{dev}_ring_palette", "option": "Heat"}, blocking=True)
+        for _ in range(30):
+            await real_sleep(0)
+        assert task.done()
+        assert writes[0][1:4] == bytes(P.color_at("Heat", 0, (255, 0, 0), (0, 255, 0)))
+
+        await hass.services.async_call("number", "set_value", {"entity_id": f"number.{dev}_ring_intensity", "value": 40}, blocking=True)
+        assert coordinator.ring_settings["intensity"] == 40
+        await hass.services.async_call("text", "set_value", {"entity_id": f"text.{dev}_ring_color_2", "value": ""}, blocking=True)
+        assert coordinator.ring_settings["color2"] == "" and hass.states.get(f"text.{dev}_ring_color_2").state == ""
+        try:
+            await hass.services.async_call("text", "set_value", {"entity_id": f"text.{dev}_ring_color_2", "value": "#12345"}, blocking=True)
+        except (HomeAssistantError, ValueError):
+            pass
+        assert coordinator.ring_settings["color2"] == ""
+        await hass.services.async_call("light", "turn_off", {"entity_id": ring}, blocking=True)
+    coordinator._client = None
+    await hass.config_entries.async_unload(entry.entry_id)

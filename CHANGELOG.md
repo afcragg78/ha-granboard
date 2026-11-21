@@ -2,8 +2,10 @@
 
 ## 0.2.4
 
-- New **LED Ring** light (`light.<board>_led_ring`): use the board's LED ring like a WLED light between games. Colour, brightness (scaled into the colour, the board has no brightness setting) and effects: Solid, Blink, Wave, Color Cycle, Chase, Rainbow Chase and Circular Wipe. On/off, colour, brightness and effect are restored after a restart.
-- Gentle on the board: only the documented ring commands are used, loop effects write at most 4 times a second (250 ms or more apart, never bursts), unchanged frames are not re-sent, and nothing is sent while the board is released or offline. When the board reconnects with the light on, the light comes back.
+- New **LED Ring** light (`light.<board>_led_ring`): use the board's LED ring like a WLED light between games. Colour, brightness (scaled into the colour, the board has no brightness setting) and 15 effects: Solid, Blink, Breathe, Heartbeat, Wave, Color Cycle, Palette Steps, Chase, Rainbow Chase, Bounce, Circular Wipe, Twinkle, Fire Flicker, Police and Lightning.
+- New **Ring Palette** select with 64 WLED-style palettes (Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Party, Ocean, Lava, Sunset, Aurora, Tiamat, ...). Palette-aware effects take their colours from it.
+- New **Ring Speed** and **Ring Intensity** numbers (0-255, like WLED) and **Ring Color 2** text (`#RRGGBB`, empty = the opposite of the light's colour). Everything is restored after a restart.
+- Gentle on the board: only the documented ring commands are used, effects write at most 4 times a second (250 ms or more apart, Ring Speed cannot go faster), unchanged whole-ring colours are not re-sent, and nothing is sent while the board is released or offline. When the board reconnects with the light on, the light comes back.
 - While a game is playing the light steps aside (it stays on with `paused_for_game: true`) so the game effects run; when the game ends or is cleared it comes back after the game effects finish. A dart outside a game plays its normal hit flash, then the light comes back.
 
 ## 0.2.3

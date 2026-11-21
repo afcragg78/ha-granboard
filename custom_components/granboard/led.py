@@ -243,26 +243,6 @@ def plan_next_player(color: RGB = RED) -> list[Step]:
 
 AMBIENT_MIN_GAP_MS = 250
 
-EFFECT_SOLID = "Solid"
-EFFECT_BLINK = "Blink"
-EFFECT_WAVE = "Wave"
-EFFECT_COLOR_CYCLE = "Color Cycle"
-EFFECT_CHASE = "Chase"
-EFFECT_RAINBOW_CHASE = "Rainbow Chase"
-EFFECT_WIPE = "Circular Wipe"
-AMBIENT_EFFECTS = (
-    EFFECT_SOLID,
-    EFFECT_BLINK,
-    EFFECT_WAVE,
-    EFFECT_COLOR_CYCLE,
-    EFFECT_CHASE,
-    EFFECT_RAINBOW_CHASE,
-    EFFECT_WIPE,
-)
-# Effects whose identical frame is a deliberate re-trigger (the board plays it and stops).
-RETRIGGER_EFFECTS = frozenset({EFFECT_BLINK, EFFECT_WAVE})
-
-
 def scale(color: Iterable[int], brightness: int) -> RGB:
     """Apply a 0-255 brightness to a colour (the board has no brightness byte).
     A lit channel never rounds down to 0 while brightness is above 0."""
@@ -292,27 +272,3 @@ def complement(color: RGB) -> RGB:
         return (0, 0, 0)
     r, g, b = colorsys.hsv_to_rgb((h + 0.5) % 1.0, s, v)
     return round(r * 255), round(g * 255), round(b * 255)
-
-
-def ambient_frame(effect: str, color: RGB, brightness: int, step: int) -> Step | None:
-    """Command and wait (ms) for one step of an ambient effect, or None when a
-    one-shot effect is done. `color` is unscaled; brightness is applied here."""
-    lit = scale(color, brightness)
-    gap = AMBIENT_MIN_GAP_MS
-    if effect == EFFECT_BLINK:
-        return blink_command(lit, 0x14), max(gap, 1200)
-    if effect == EFFECT_WAVE:
-        return wave_command(lit, scale(complement(tuple(color)), brightness), 0x05), max(gap, 4000)  # type: ignore[arg-type]
-    if effect == EFFECT_COLOR_CYCLE:
-        return ring_command(hue(step * 10, brightness)), max(gap, 500)  # full wheel in 18 s
-    if effect == EFFECT_CHASE:
-        return hit_command(CLOCKWISE_ORDER[step % 20], lit, 1, 0x14), max(gap, 300)
-    if effect == EFFECT_RAINBOW_CHASE:
-        return hit_command(CLOCKWISE_ORDER[step % 20], hue(step * 18, brightness), 1, 0x14), max(gap, 300)
-    if effect == EFFECT_WIPE:
-        n = step % 21
-        if n == 20:  # end of the lap: clear, then rest before the next lap
-            return clear_command(), max(gap, 1500)
-        return hit_command(CLOCKWISE_ORDER[n], lit, 1, 0x0A), gap
-    # Solid (and anything unknown): one write, the ring holds it.
-    return (ring_command(lit), gap) if step == 0 else None

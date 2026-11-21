@@ -140,6 +140,24 @@
           }
         }
       }
+    },
+    "select": {
+      "ring_palette": {
+        "name": "Ring Palette"
+      }
+    },
+    "number": {
+      "ring_speed": {
+        "name": "Ring Speed"
+      },
+      "ring_intensity": {
+        "name": "Ring Intensity"
+      }
+    },
+    "text": {
+      "ring_color_2": {
+        "name": "Ring Color 2"
+      }
     }
   },
   "selector": {

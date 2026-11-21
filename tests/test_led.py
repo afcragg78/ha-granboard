@@ -116,25 +116,3 @@ def test_ambient_scale_and_hue():
     assert L.hue(0) == (255, 0, 0) and L.hue(120) == (0, 255, 0) and L.hue(240) == (0, 0, 255)
     assert L.complement((255, 0, 0)) == (0, 255, 255)
     assert L.complement((255, 255, 255)) == (0, 0, 0)
-
-
-def test_ambient_frames_are_gentle_and_documented():
-    from custom_components.granboard import led as L
-
-    solid = L.ambient_frame(L.EFFECT_SOLID, (255, 0, 0), 128, 0)
-    assert solid[0] == L.ring_command((128, 0, 0))
-    assert L.ambient_frame(L.EFFECT_SOLID, (255, 0, 0), 128, 1) is None
-    allowed = {L.LIGHT_RING, L.BLINK, L.WAVE, L.HIT_SINGLE, L.HIT_DOUBLE, L.HIT_TRIPLE}
-    for effect in L.AMBIENT_EFFECTS:
-        for step in range(45):
-            frame = L.ambient_frame(effect, (0, 0, 255), 200, step)
-            if frame is None:
-                break
-            cmd, wait = frame
-            assert wait >= L.AMBIENT_MIN_GAP_MS >= 200  # at most 4 writes a second
-            assert cmd == L.clear_command() or (len(cmd) == 16 and cmd[0] in allowed)
-    wipe = [L.ambient_frame(L.EFFECT_WIPE, (0, 255, 0), 255, s)[0] for s in range(21)]
-    assert [c[10] for c in wipe[:20]] == [L.LED_POSITIONS[n] for n in L.CLOCKWISE_ORDER]
-    assert wipe[20] == L.clear_command()
-    wave = L.ambient_frame(L.EFFECT_WAVE, (255, 0, 0), 255, 0)[0]
-    assert wave[0] == L.WAVE and wave[1:4] == bytes((255, 0, 0)) and wave[4:7] == bytes((0, 255, 255))
