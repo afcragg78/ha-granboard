@@ -1,0 +1,54 @@
+new_game:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    game:
+      required: true
+      example: x01
+      selector:
+        select:
+          options: [x01, cricket, count_up, around_the_clock]
+          translation_key: game
+    start:
+      default: 501
+      selector:
+        select:
+          options: ["301", "501", "701"]
+    double_out:
+      default: false
+      selector:
+        boolean:
+    rounds:
+      selector:
+        number:
+          min: 0
+          max: 99
+          mode: box
+    players:
+      example: '["Andrew", "Guest"]'
+      selector:
+        text:
+          multiple: true
+undo:
+  fields: &device
+    device_id:
+      selector:
+        device:
+          integration: granboard
+next_player:
+  fields: *device
+end_game:
+  fields: *device
+throw:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    segment:
+      required: true
+      example: T20
+      selector:
+        text:

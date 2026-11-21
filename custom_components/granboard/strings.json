@@ -1,0 +1,156 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Pick a Granboard found over Bluetooth, or type its address (for example CA:0F:52:F5:55:47). Close the Granboard phone app first; the board takes one connection at a time.",
+        "data": {
+          "address": "Board"
+        }
+      },
+      "bluetooth_confirm": {
+        "description": "Set up {name} ({address})? Close the Granboard phone app first."
+      }
+    },
+    "error": {
+      "invalid_address": "That is not a Bluetooth address. Use six pairs like CA:0F:52:F5:55:47."
+    },
+    "abort": {
+      "already_configured": "This Granboard is already set up.",
+      "already_in_progress": "This Granboard is already being set up.",
+      "not_supported": "This Bluetooth device is not a Granboard."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "button_next_player": "Board Button Ends The Turn"
+        },
+        "description": "While a game is running, the button on the board moves to the next player."
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connected": {
+        "name": "Connected"
+      }
+    },
+    "switch": {
+      "connect": {
+        "name": "Granboard Connection"
+      }
+    },
+    "sensor": {
+      "last_hit": {
+        "name": "Last Hit"
+      },
+      "last_raw": {
+        "name": "Last Raw Frame"
+      },
+      "rssi": {
+        "name": "Signal Strength"
+      },
+      "game": {
+        "name": "Game",
+        "state": {
+          "idle": "Idle",
+          "playing": "Playing",
+          "finished": "Finished"
+        }
+      }
+    },
+    "button": {
+      "release": {
+        "name": "Release Board"
+      }
+    }
+  },
+  "selector": {
+    "game": {
+      "options": {
+        "x01": "x01 (301 / 501 / 701)",
+        "cricket": "Cricket",
+        "count_up": "Count-Up",
+        "around_the_clock": "Around The Clock"
+      }
+    }
+  },
+  "services": {
+    "new_game": {
+      "name": "New Game",
+      "description": "Start a darts game on the board.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "game": {
+          "name": "Game",
+          "description": "x01, cricket, count_up, or around_the_clock."
+        },
+        "start": {
+          "name": "Start",
+          "description": "x01 starting score."
+        },
+        "double_out": {
+          "name": "Double Out",
+          "description": "x01 must finish on a double or the bullseye."
+        },
+        "rounds": {
+          "name": "Rounds",
+          "description": "Round limit. Count-Up defaults to 8; 0 means no limit."
+        },
+        "players": {
+          "name": "Players",
+          "description": "Player names in throwing order."
+        }
+      }
+    },
+    "undo": {
+      "name": "Undo",
+      "description": "Take back the last dart or turn change.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        }
+      }
+    },
+    "next_player": {
+      "name": "Next Player",
+      "description": "End the turn and move to the next player.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        }
+      }
+    },
+    "end_game": {
+      "name": "End Game",
+      "description": "Stop the current game.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        }
+      }
+    },
+    "throw": {
+      "name": "Throw",
+      "description": "Score a dart without the board, for testing the dashboard.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "segment": {
+          "name": "Segment",
+          "description": "T20, D16, S5, SB (25), DB (50), or MISS."
+        }
+      }
+    }
+  }
+}
