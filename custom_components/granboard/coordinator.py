@@ -7,6 +7,7 @@ import contextlib
 import logging
 from collections import deque
 from dataclasses import dataclass, field
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
@@ -98,6 +99,9 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._dedupe = DuplicateFilter(self.debounce_ms)
         self._led_queue: deque[led.Step] = deque()
         self._led_task: asyncio.Task[None] | None = None
+        self._led_idle = asyncio.Event()
+        self._led_idle.set()
+        self._led_listeners: list[Callable[[], None]] = []
         self._write_response = False
         self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None
@@ -468,8 +472,28 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     def can_write(self) -> bool:
         return self._client is not None and self.data.connected and bool(self.data.write_uuid)
 
+    @property
+    def game_playing(self) -> bool:
+        return self.game.status == "playing"
+
     @callback
-    def led_play(self, steps: list[led.Step], replace: bool = True) -> None:
+    def add_led_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        """Called after game / hit / service effects are queued (not ambient ones),
+        so the LED Ring light can step aside and come back afterwards."""
+        self._led_listeners.append(listener)
+
+        def _remove() -> None:
+            with contextlib.suppress(ValueError):
+                self._led_listeners.remove(listener)
+
+        return _remove
+
+    async def async_led_idle(self) -> None:
+        """Wait until every queued LED command has been written."""
+        await self._led_idle.wait()
+
+    @callback
+    def led_play(self, steps: list[led.Step], replace: bool = True, ambient: bool = False) -> None:
         """Queue LED commands. A new effect replaces what is still waiting, so the
         newest dart always lights first and nothing piles up."""
         if not steps or not self.can_write:
@@ -478,12 +502,26 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self._led_queue.clear()
         room = LED_QUEUE_MAX - len(self._led_queue)
         self._led_queue.extend(steps[: max(0, room)])
+        self._led_idle.clear()
         if self._led_task is None or self._led_task.done():
             self._led_task = self.entry.async_create_background_task(
                 self.hass, self._led_worker(), name=f"{DOMAIN}-{self.address}-led"
             )
+        if not ambient:
+            for listener in list(self._led_listeners):
+                try:
+                    listener()
+                except Exception:  # noqa: BLE001 - the light must never break hit reading
+                    _LOGGER.exception("Granboard %s LED listener failed", self.address)
 
     async def _led_worker(self) -> None:
+        try:
+            await self._led_drain()
+        finally:
+            if not self._led_queue:
+                self._led_idle.set()
+
+    async def _led_drain(self) -> None:
         while self._led_queue:
             data, wait_ms = self._led_queue.popleft()
             client, uuid = self._client, self.data.write_uuid

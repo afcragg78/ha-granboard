@@ -9,7 +9,7 @@ MANIFEST = json.loads((ROOT / "custom_components" / "granboard" / "manifest.json
 
 def test_manifest_basics():
     assert MANIFEST["domain"] == "granboard"
-    assert MANIFEST["version"] == "0.2.3"
+    assert MANIFEST["version"] == "0.2.4"
     assert MANIFEST["config_flow"] is True
     assert "bluetooth" in MANIFEST["dependencies"]
 

@@ -28,6 +28,7 @@ If the connection drops, move an ESPHome Bluetooth proxy close to the board.
 | Sensor **Last Hit** | Segment (`T20`, `D16`, `S5`, `SB`, `DB`, `MISS`), with number, multiplier, score, ring, and raw frame as attributes. |
 | Sensor **Last Raw Frame** | The last frame exactly as received (diagnostic). |
 | Sensor **Signal Strength** | RSSI from the last advertisement (diagnostic). The board stops advertising while connected, so this updates only while it is not. |
+| Light **LED Ring** | The board's LED ring as a light between games (see LED Ring Light below). |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
 
 ## Events
@@ -100,6 +101,15 @@ data:
 ```
 
 The LED command format comes from the community reference [keenanlk/granboard-ble-codes](https://github.com/keenanlk/granboard-ble-codes), tested there on a GranBoard 3s.
+
+## LED Ring Light
+
+**LED Ring** (`light.<board>_led_ring`, e.g. `light.granboard_5547_led_ring`) turns the board's LED ring into a WLED-style light when no game is playing. Pick a colour, a brightness and an effect: **Solid**, **Blink**, **Wave** (your colour and its opposite), **Color Cycle**, **Chase**, **Rainbow Chase** or **Circular Wipe**.
+
+- Loop effects are slow on purpose (at most 4 writes a second) so the board keeps reading darts.
+- When a game starts the light pauses (`paused_for_game: true`) and the game lights take over. When the game ends or is cleared, the light comes back.
+- A dart outside a game flashes as usual, then the light comes back.
+- Nothing is sent while the board is released or offline; the light is re-applied when it reconnects.
 
 ## Sounds
 

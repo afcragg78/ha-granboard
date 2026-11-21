@@ -290,3 +290,163 @@ async def test_dart_after_full_turn_goes_to_next_player(hass: HomeAssistant) -> 
         coordinator._handle_payload(b"3.6@")
     assert coordinator.game.current == 1 and coordinator.game.turn_complete
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def _ring_setup(hass: HomeAssistant):
+    entry = await _setup(hass, options={"connect": False})
+    coordinator = entry.runtime_data
+    writes: list[bytes] = []
+
+    class FakeClient:
+        async def write_gatt_char(self, uuid, data, response=False):
+            writes.append(bytes(data))
+
+    coordinator._client = FakeClient()
+    coordinator.data.write_uuid = "442f1572-8a00-9a28-cbe1-e1d4212d53eb"
+    coordinator._warmup._until = 0
+    coordinator._set_connected(True)
+    await hass.async_block_till_done()
+    return entry, coordinator, writes
+
+
+async def test_led_ring_light_solid_pause_and_resume(hass: HomeAssistant) -> None:
+    from custom_components.granboard import led
+
+    ring = "light.granboard_5547_led_ring"
+    real_sleep = __import__("asyncio").sleep
+
+    async def fast_sleep(*_args):
+        await real_sleep(0)  # still yields, like a real wait
+
+    with patch(f"{CO}.asyncio.sleep", new=fast_sleep):
+        entry, coordinator, writes = await _ring_setup(hass)
+        assert hass.states.get(ring).state == "off"
+        assert hass.states.get(ring).attributes["effect_list"][:3] == ["Solid", "Blink", "Wave"]
+        await hass.services.async_call(
+            "light", "turn_on", {"entity_id": ring, "rgb_color": [255, 0, 0], "brightness": 128}, blocking=True
+        )
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [led.ring_command((128, 0, 0))]
+        state = hass.states.get(ring)
+        assert state.state == "on" and state.attributes["paused_for_game"] is False
+        writes.clear()
+
+        # A game takes over: the light stays on but paused, and writes nothing of its own.
+        await hass.services.async_call("granboard", "new_game", {"game": "501", "players": ["Andrew"]}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert hass.states.get(ring).attributes["paused_for_game"] is True
+        assert led.ring_command((128, 0, 0)) not in writes
+        writes.clear()
+        coordinator._handle_payload(b"3.4@")
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert led.ring_command((128, 0, 0)) not in writes
+        writes.clear()
+
+        # Clearing the game brings the light back after the game effects.
+        await hass.services.async_call("granboard", "end_game", {}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [bytes(20), led.ring_command((128, 0, 0))]
+        assert hass.states.get(ring).attributes["paused_for_game"] is False
+        writes.clear()
+
+        # A hit outside a game flashes, then the light comes back.
+        await hass.services.async_call("granboard", "throw", {"segment": "S5"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes[0][0] == led.HIT_SINGLE and writes[-1] == led.ring_command((128, 0, 0))
+        writes.clear()
+
+        await hass.services.async_call("light", "turn_off", {"entity_id": ring}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [bytes(20)]
+        writes.clear()
+
+        # Offline: nothing is written. Back online with the light on: it is re-applied.
+        await hass.services.async_call("light", "turn_on", {"entity_id": ring, "brightness": 255}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        writes.clear()
+        client = coordinator._client
+        coordinator._client = None
+        coordinator._set_connected(False)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        await hass.services.async_call("light", "turn_on", {"entity_id": ring, "rgb_color": [0, 0, 255]}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == []
+        coordinator._client = client
+        coordinator._set_connected(True)
+        await real_sleep(0)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [led.ring_command((0, 0, 255))]
+    coordinator._client = None
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_led_ring_effect_loop_starts_and_cancels(hass: HomeAssistant) -> None:
+    import asyncio
+
+    from custom_components.granboard import led
+
+    ring = "light.granboard_5547_led_ring"
+    real_sleep = asyncio.sleep
+    gate = asyncio.Event()
+    loop_waits: list[float] = []
+
+    async def fake_sleep(seconds, *args):
+        if seconds >= led.AMBIENT_MIN_GAP_MS / 1000 and seconds < 1:  # ambient loop gaps
+            loop_waits.append(seconds)
+            if len(loop_waits) >= 3:
+                await gate.wait()  # hold the loop here until it is cancelled
+        await real_sleep(0)
+
+    with patch(f"{CO}.asyncio.sleep", new=fake_sleep):
+        entry, coordinator, writes = await _ring_setup(hass)
+        await hass.services.async_call(
+            "light", "turn_on", {"entity_id": ring, "rgb_color": [0, 255, 0], "effect": "Circular Wipe"}, blocking=True
+        )
+        for _ in range(50):
+            await real_sleep(0)
+        assert [w[10] for w in writes] == [led.LED_POSITIONS[n] for n in led.CLOCKWISE_ORDER[:3]]
+        assert all(w[0] == led.HIT_SINGLE and w[1:4] == bytes((0, 255, 0)) for w in writes)
+        assert min(loop_waits) >= 0.25
+        light = hass.data["light"].get_entity(ring)
+        task = light._task
+        assert task is not None and not task.done()
+
+        # A new game cancels the loop.
+        await hass.services.async_call("granboard", "new_game", {"game": "501", "players": ["Andrew"]}, blocking=True)
+        for _ in range(10):
+            await real_sleep(0)
+        assert task.done() and light._task is None
+        await hass.services.async_call("granboard", "end_game", {}, blocking=True)
+        for _ in range(50):
+            await real_sleep(0)
+        assert light._task is not None and not light._task.done()
+
+        # Turning off cancels the loop and clears the ring.
+        task = light._task
+        writes.clear()
+        await hass.services.async_call("light", "turn_off", {"entity_id": ring}, blocking=True)
+        for _ in range(10):
+            await real_sleep(0)
+        assert task.done() and writes[-1] == bytes(20)
+    coordinator._client = None
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_led_ring_restores_last_state(hass: HomeAssistant) -> None:
+    from pytest_homeassistant_custom_component.common import mock_restore_cache
+
+    from homeassistant.core import State
+
+    mock_restore_cache(
+        hass,
+        [State("light.granboard_5547_led_ring", "on", {"rgb_color": [0, 0, 255], "brightness": 64, "effect": "Chase"})],
+    )
+    entry = await _setup(hass, options={"connect": False})
+    state = hass.states.get("light.granboard_5547_led_ring")
+    assert state.state == "on"
+    assert tuple(state.attributes["rgb_color"]) == (0, 0, 255)
+    assert state.attributes["brightness"] == 64 and state.attributes["effect"] == "Chase"
+    coordinator = entry.runtime_data
+    assert coordinator._led_listeners  # listening for game effects
+    await hass.config_entries.async_unload(entry.entry_id)
+    assert not coordinator._led_listeners

@@ -130,6 +130,16 @@
       "release": {
         "name": "Release Board"
       }
+    },
+    "light": {
+      "ring": {
+        "name": "LED Ring",
+        "state_attributes": {
+          "paused_for_game": {
+            "name": "Paused For Game"
+          }
+        }
+      }
     }
   },
   "selector": {

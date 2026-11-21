@@ -234,3 +234,85 @@ def turn_wipe(color: RGB, gap_ms: int = MIN_GAP_MS) -> list[Step]:
 def plan_next_player(color: RGB = RED) -> list[Step]:
     """End of turn / darts pulled: circular wipe in the next player's colour."""
     return turn_wipe(color)
+
+
+# ------------------------------------------------------------ ambient light
+# The LED Ring light entity uses only the documented commands above (ring,
+# blink, wave, segment blink, clear). Loop effects are slow: at least
+# AMBIENT_MIN_GAP_MS between writes (4 per second at most), never bursts.
+
+AMBIENT_MIN_GAP_MS = 250
+
+EFFECT_SOLID = "Solid"
+EFFECT_BLINK = "Blink"
+EFFECT_WAVE = "Wave"
+EFFECT_COLOR_CYCLE = "Color Cycle"
+EFFECT_CHASE = "Chase"
+EFFECT_RAINBOW_CHASE = "Rainbow Chase"
+EFFECT_WIPE = "Circular Wipe"
+AMBIENT_EFFECTS = (
+    EFFECT_SOLID,
+    EFFECT_BLINK,
+    EFFECT_WAVE,
+    EFFECT_COLOR_CYCLE,
+    EFFECT_CHASE,
+    EFFECT_RAINBOW_CHASE,
+    EFFECT_WIPE,
+)
+# Effects whose identical frame is a deliberate re-trigger (the board plays it and stops).
+RETRIGGER_EFFECTS = frozenset({EFFECT_BLINK, EFFECT_WAVE})
+
+
+def scale(color: Iterable[int], brightness: int) -> RGB:
+    """Apply a 0-255 brightness to a colour (the board has no brightness byte).
+    A lit channel never rounds down to 0 while brightness is above 0."""
+    level = max(0, min(255, int(brightness)))
+    out = []
+    for c in color:
+        c = max(0, min(255, int(c)))
+        v = round(c * level / 255)
+        out.append(1 if v == 0 and c > 0 and level > 0 else v)
+    return tuple(out)  # type: ignore[return-value]
+
+
+def hue(degrees: float, brightness: int = 255) -> RGB:
+    """Fully saturated colour on the colour wheel."""
+    import colorsys
+
+    r, g, b = colorsys.hsv_to_rgb((degrees % 360) / 360, 1.0, 1.0)
+    return scale((round(r * 255), round(g * 255), round(b * 255)), brightness)
+
+
+def complement(color: RGB) -> RGB:
+    import colorsys
+
+    r, g, b = (c / 255 for c in color)
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    if s == 0:  # white / grey: pair it with the off colour of the wave
+        return (0, 0, 0)
+    r, g, b = colorsys.hsv_to_rgb((h + 0.5) % 1.0, s, v)
+    return round(r * 255), round(g * 255), round(b * 255)
+
+
+def ambient_frame(effect: str, color: RGB, brightness: int, step: int) -> Step | None:
+    """Command and wait (ms) for one step of an ambient effect, or None when a
+    one-shot effect is done. `color` is unscaled; brightness is applied here."""
+    lit = scale(color, brightness)
+    gap = AMBIENT_MIN_GAP_MS
+    if effect == EFFECT_BLINK:
+        return blink_command(lit, 0x14), max(gap, 1200)
+    if effect == EFFECT_WAVE:
+        return wave_command(lit, scale(complement(tuple(color)), brightness), 0x05), max(gap, 4000)  # type: ignore[arg-type]
+    if effect == EFFECT_COLOR_CYCLE:
+        return ring_command(hue(step * 10, brightness)), max(gap, 500)  # full wheel in 18 s
+    if effect == EFFECT_CHASE:
+        return hit_command(CLOCKWISE_ORDER[step % 20], lit, 1, 0x14), max(gap, 300)
+    if effect == EFFECT_RAINBOW_CHASE:
+        return hit_command(CLOCKWISE_ORDER[step % 20], hue(step * 18, brightness), 1, 0x14), max(gap, 300)
+    if effect == EFFECT_WIPE:
+        n = step % 21
+        if n == 20:  # end of the lap: clear, then rest before the next lap
+            return clear_command(), max(gap, 1500)
+        return hit_command(CLOCKWISE_ORDER[n], lit, 1, 0x0A), gap
+    # Solid (and anything unknown): one write, the ring holds it.
+    return (ring_command(lit), gap) if step == 0 else None

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- New **LED Ring** light (`light.<board>_led_ring`): use the board's LED ring like a WLED light between games. Colour, brightness (scaled into the colour, the board has no brightness setting) and effects: Solid, Blink, Wave, Color Cycle, Chase, Rainbow Chase and Circular Wipe. On/off, colour, brightness and effect are restored after a restart.
+- Gentle on the board: only the documented ring commands are used, loop effects write at most 4 times a second (250 ms or more apart, never bursts), unchanged frames are not re-sent, and nothing is sent while the board is released or offline. When the board reconnects with the light on, the light comes back.
+- While a game is playing the light steps aside (it stays on with `paused_for_game: true`) so the game effects run; when the game ends or is cleared it comes back after the game effects finish. A dart outside a game plays its normal hit flash, then the light comes back.
+
 ## 0.2.3
 
 - A dart thrown after a full turn now starts the next player and counts for them instead of being ignored (new Configure option, on by default).
