@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Player colours are now pure, fully saturated LED colours (red ff0000, blue 0000ff, green 00ff00, ...) so the board and WLED show sharp colours instead of pastel tones (red looked pink).
+
 ## 0.2.0
 
 - Board lights like the Granboard app (option **Light The Board On Hits**, on by default). Each dart blinks its segment on the board's LED ring in the thrower's colour: once for a single, twice for a double, three times for a triple. Triple 20 adds a wave. Outer bull flashes the ring, and the inner bull plays a red wave and flash.

@@ -96,7 +96,7 @@ action: granboard.led
 data:
   effect: segment
   segment: T20
-  color: "#ff3b30"
+  color: "#ff0000"
 ```
 
 The LED command format comes from the community reference [keenanlk/granboard-ble-codes](https://github.com/keenanlk/granboard-ble-codes), tested there on a GranBoard 3s.

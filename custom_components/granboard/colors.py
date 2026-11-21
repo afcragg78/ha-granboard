@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 # Default colour for player 1..8: red, blue, green, yellow, purple, orange, cyan, pink.
-PLAYER_PALETTE = ("#ff3b30", "#0a84ff", "#30d158", "#ffd60a", "#bf5af2", "#ff9f0a", "#64d2ff", "#ff375f")
+PLAYER_PALETTE = ("#ff0000", "#0000ff", "#00ff00", "#ffff00", "#8000ff", "#ff6000", "#00ffff", "#ff0080")
 
 NAMED = {
-    "red": "#ff3b30", "blue": "#0a84ff", "green": "#30d158", "yellow": "#ffd60a",
-    "purple": "#bf5af2", "orange": "#ff9f0a", "cyan": "#64d2ff", "pink": "#ff375f",
-    "white": "#ffffff", "teal": "#40c8e0", "lime": "#a3e635", "gold": "#ffc300",
+    "red": "#ff0000", "blue": "#0000ff", "green": "#00ff00", "yellow": "#ffff00",
+    "purple": "#8000ff", "orange": "#ff6000", "cyan": "#00ffff", "pink": "#ff0080",
+    "white": "#ffffff", "teal": "#00ffc0", "lime": "#80ff00", "gold": "#ffb000",
 }
 
 

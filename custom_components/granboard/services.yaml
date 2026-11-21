@@ -32,7 +32,7 @@ new_game:
         text:
           multiple: true
     colors:
-      example: '["#ff3b30", "blue"]'
+      example: '["#ff0000", "blue"]'
       selector:
         text:
           multiple: true
@@ -74,7 +74,7 @@ led:
       selector:
         text:
     color:
-      example: "#ff3b30"
+      example: "#ff0000"
       selector:
         text:
     color2:

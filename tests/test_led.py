@@ -73,20 +73,20 @@ def test_every_award_has_an_effect(kind):
 
 
 def test_colors():
-    assert parse_color("#ABC") == "#aabbcc" and parse_color("Blue") == "#0a84ff"
+    assert parse_color("#ABC") == "#aabbcc" and parse_color("Blue") == "#0000ff"
     assert parse_color([255, 0, 1]) == "#ff0001" and parse_color("nope") is None
     assert player_color(1) == PLAYER_PALETTE[1] and player_color(0, "00ff00") == "#00ff00"
-    assert to_rgb("#0a84ff") == (10, 132, 255)
+    assert to_rgb("#0000ff") == (0, 0, 255)
 
 
 def test_game_player_colors_and_checkout_award():
     g = Game()
     g.new_game("301", ["A", "B", "C"], colors=["green", None])
     attrs = g.as_dict()
-    assert attrs["current_player_color"] == "#30d158" and attrs["players"][1]["color"] == PLAYER_PALETTE[1]
-    assert [p.color for p in g.players] == ["#30d158", PLAYER_PALETTE[1], PLAYER_PALETTE[2]]
+    assert attrs["current_player_color"] == "#00ff00" and attrs["players"][1]["color"] == PLAYER_PALETTE[1]
+    assert [p.color for p in g.players] == ["#00ff00", PLAYER_PALETTE[1], PLAYER_PALETTE[2]]
     restored = Game.load(g.dump())
-    assert restored.players[0].color == "#30d158"
+    assert restored.players[0].color == "#00ff00"
     old = g.dump()
     for p in old["players"]:
         p.pop("color")
@@ -95,7 +95,7 @@ def test_game_player_colors_and_checkout_award():
     g.turn_start_score = 40
     awards = g.throw(parse_segment("D20"))
     co = [a for a in awards if a["type"] == "checkout"][0]
-    assert co["score"] == 40 and co["double"] is True and co["color"] == "#30d158"
+    assert co["score"] == 40 and co["double"] is True and co["color"] == "#00ff00"
     del attrs
 
 

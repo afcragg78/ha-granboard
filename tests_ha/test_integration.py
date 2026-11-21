@@ -184,18 +184,18 @@ async def test_led_effects_follow_hits_turns_and_service(hass: HomeAssistant) ->
         for _ in range(3):  # one physical press = three identical frames
             coordinator._handle_payload(b"3.4@")
         await hass.async_block_till_done()
-        assert hits[-1]["color"] == "#30d158" and hits[-1]["player"] == "Andrew" and len(hits) == 1
+        assert hits[-1]["color"] == "#00ff00" and hits[-1]["player"] == "Andrew" and len(hits) == 1
         assert [w[1][0] for w in writes] == [3, led.WAVE]  # triple 20: 3 blinks + wave
-        assert writes[0][1][1:4] == bytes((0x30, 0xD1, 0x58))
+        assert writes[0][1][1:4] == bytes((0x00, 0xFF, 0x00))
         writes.clear()
         await hass.services.async_call("granboard", "next_player", {}, blocking=True)
         await hass.async_block_till_done()
-        assert turns[-1]["player"] == "Guest" and turns[-1]["color"] == "#0a84ff"
+        assert turns[-1]["player"] == "Guest" and turns[-1]["color"] == "#0000ff"
         assert len(writes) == 21 and writes[-1][1] == bytes(20)  # circular wipe, then clear
         writes.clear()
         await hass.services.async_call("granboard", "led", {"effect": "blink", "color": "red"}, blocking=True)
         await hass.async_block_till_done()
-        assert writes[0][1][0] == led.BLINK and writes[0][1][1:4] == bytes((0xFF, 0x3B, 0x30))
+        assert writes[0][1][0] == led.BLINK and writes[0][1][1:4] == bytes((0xFF, 0x00, 0x00))
         writes.clear()
         hass.config_entries.async_update_entry(entry, options={**entry.options, "led_effects": False})
         await hass.services.async_call("granboard", "throw", {"segment": "S5"}, blocking=True)
