@@ -81,3 +81,10 @@ def test_parse_segment(text, segment, score):
 def test_parse_segment_rejects():
     with pytest.raises(ValueError):
         parse_segment("T21")
+
+
+def test_banner_glued_to_first_hit_still_decodes():
+    hit = decode_frame("GB7;1013.6@")
+    assert hit.known and hit.number == 20 and hit.multiplier == 2
+    assert isinstance(decode_frame("GB7;101BTN@"), Button)
+    assert not decode_frame("zz@").known

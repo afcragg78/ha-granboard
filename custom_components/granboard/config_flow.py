@@ -17,12 +17,14 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_AUTO_NEXT,
     CONF_BUTTON_NEXT,
     CONF_DEBOUNCE_MS,
     CONF_LED_FX,
     CONF_SOUND_PLAYER,
     CONF_SOUND_VOLUMES,
     CONF_SOUNDS,
+    DEFAULT_AUTO_NEXT,
     DEFAULT_BUTTON_NEXT,
     DEFAULT_DEBOUNCE_MS,
     DEFAULT_LED_FX,
@@ -124,6 +126,7 @@ class GranboardOptionsFlow(OptionsFlow):
         schema = vol.Schema(
             {
                 vol.Required(CONF_BUTTON_NEXT, default=options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT)): bool,
+                vol.Required(CONF_AUTO_NEXT, default=options.get(CONF_AUTO_NEXT, DEFAULT_AUTO_NEXT)): bool,
                 vol.Required(
                     CONF_DEBOUNCE_MS, default=int(options.get(CONF_DEBOUNCE_MS, DEFAULT_DEBOUNCE_MS))
                 ): vol.All(vol.Coerce(int), vol.Range(min=0, max=2000)),

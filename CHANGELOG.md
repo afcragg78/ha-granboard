@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- A dart thrown after a full turn now starts the next player and counts for them instead of being ignored (new Configure option, on by default).
+- The first hit after connecting is no longer lost when the board glues its banner (e.g. `GB7;101`) onto it.
+- Repeat Hit Window default lowered from 500 ms to 250 ms, so quick hits on the same bed count.
+
 ## 0.2.2
 
 - `granboard.end_game` now fully clears the game (including a finished game with a winner) back to a blank idle board. Undo restores it.

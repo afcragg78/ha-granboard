@@ -6,7 +6,7 @@ import random
 import time
 
 WARMUP_SECONDS = 2.0
-DEBOUNCE_MS = 500
+DEBOUNCE_MS = 250
 
 
 def backoff_seconds(attempt: int, *, start: float = 2.0, cap: float = 60.0, jitter: float = 0.2, roll: float | None = None) -> float:

@@ -32,6 +32,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
+    CONF_AUTO_NEXT,
     CONF_BUTTON_NEXT,
     CONF_CONNECT,
     CONF_DEBOUNCE_MS,
@@ -39,6 +40,7 @@ from .const import (
     CONF_SOUND_PLAYER,
     CONF_SOUND_VOLUMES,
     CONF_SOUNDS,
+    DEFAULT_AUTO_NEXT,
     DEFAULT_BUTTON_NEXT,
     DEFAULT_DEBOUNCE_MS,
     DEFAULT_LED_FX,
@@ -116,6 +118,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     @property
     def button_next_player(self) -> bool:
         return bool(self.entry.options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT))
+
+    @property
+    def auto_next_player(self) -> bool:
+        return bool(self.entry.options.get(CONF_AUTO_NEXT, DEFAULT_AUTO_NEXT))
 
     @property
     def led_effects(self) -> bool:
@@ -343,6 +349,9 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         """A dart from the board or the throw service."""
         self.data.last_hit = hit
         self.data.last_hit_time = datetime.now(timezone.utc)
+        if self.game.status == "playing" and self.game.turn_complete and hit.known and self.auto_next_player:
+            # A dart after a finished turn belongs to the next player instead of being lost.
+            self.next_player()
         playing = self.game.status == "playing"
         color = self.game.color_of(self.game.current) if playing else self.game.color_of(None)
         extra = {"player": self.game.player.name, "player_index": self.game.current} if playing else {}

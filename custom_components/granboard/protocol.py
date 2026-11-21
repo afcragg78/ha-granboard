@@ -147,7 +147,17 @@ def decode_frame(frame: str) -> Hit | Button:
         return make_hit(0, RING_MISS, raw)
     entry = FRAME_MAP.get(body)
     if entry is None:
-        return unknown_hit(raw)
+        # Right after connecting, the board can glue its banner (e.g. "GB7;101")
+        # onto the first hit. Keep the hit by matching the frame at the end.
+        for i in range(1, len(body)):
+            tail = body[i:]
+            if tail.upper() == BUTTON_FRAME:
+                return Button(raw=raw)
+            if tail in FRAME_MAP:
+                entry = FRAME_MAP[tail]
+                break
+        else:
+            return unknown_hit(raw)
     return make_hit(entry[0], entry[1], raw)
 
 

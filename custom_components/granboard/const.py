@@ -16,8 +16,10 @@ EVENT_TURN = "granboard_turn"
 CONF_CONNECT = "connect"
 CONF_BUTTON_NEXT = "button_next_player"
 DEFAULT_BUTTON_NEXT = True
+CONF_AUTO_NEXT = "auto_next_player"
+DEFAULT_AUTO_NEXT = True
 CONF_DEBOUNCE_MS = "debounce_ms"
-DEFAULT_DEBOUNCE_MS = 500
+DEFAULT_DEBOUNCE_MS = 250
 CONF_LED_FX = "led_effects"
 DEFAULT_LED_FX = True
 

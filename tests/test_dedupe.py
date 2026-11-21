@@ -11,8 +11,8 @@ class Clock:
         return self.t
 
 
-def test_default_window_is_500ms():
-    assert DEBOUNCE_MS == 500
+def test_default_window_is_250ms():
+    assert DEBOUNCE_MS == 250
 
 
 def test_bounce_burst_counts_once():
@@ -30,9 +30,9 @@ def test_window_measured_from_last_accepted_frame():
     clock = Clock()
     f = DuplicateFilter(clock=clock)
     assert f.accept("3.6@")
-    clock.t += 0.4
+    clock.t += 0.2
     assert not f.accept("3.6@")
-    clock.t += 0.2  # 600 ms after the accepted one
+    clock.t += 0.1  # 300 ms after the accepted one
     assert f.accept("3.6@")
 
 

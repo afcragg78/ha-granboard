@@ -35,6 +35,7 @@
         "title": "General",
         "data": {
           "button_next_player": "Board Button Ends The Turn",
+          "auto_next_player": "Next Dart After A Full Turn Starts The Next Player",
           "debounce_ms": "Repeat Hit Window (ms)",
           "led_effects": "Light The Board On Hits"
         },

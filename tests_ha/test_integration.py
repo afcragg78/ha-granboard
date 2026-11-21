@@ -265,7 +265,28 @@ async def test_options_menu_sounds_and_volumes(hass: HomeAssistant) -> None:
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"button_next_player": True, "debounce_ms": 300, "led_effects": False}
+        result["flow_id"], {"button_next_player": True, "auto_next_player": True, "debounce_ms": 300, "led_effects": False}
     )
     assert entry.options["debounce_ms"] == 300 and entry.options["sounds"]["winner"].endswith("win.mp3")
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_dart_after_full_turn_goes_to_next_player(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, options={"connect": False})
+    coordinator = entry.runtime_data
+    coordinator._warmup._until = 0
+    await hass.services.async_call(DOMAIN, "new_game", {"game": "x01", "start": 301, "players": ["A", "B"]}, blocking=True)
+    for frame, gap in ((b"3.4@", 0), (b"3.6@", 0), (b"3.4@", 0)):
+        coordinator._dedupe.reset()
+        coordinator._handle_payload(frame)
+    assert coordinator.game.turn_complete and coordinator.game.current == 0
+    coordinator._dedupe.reset()
+    coordinator._handle_payload(b"GB7;1013.6@")  # 4th dart, with the connect banner glued on
+    await hass.async_block_till_done()
+    assert coordinator.game.current == 1 and coordinator.game.players[1].score == 261
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "auto_next_player": False})
+    for _ in range(3):
+        coordinator._dedupe.reset()
+        coordinator._handle_payload(b"3.6@")
+    assert coordinator.game.current == 1 and coordinator.game.turn_complete
     await hass.config_entries.async_unload(entry.entry_id)
