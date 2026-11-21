@@ -31,6 +31,11 @@ new_game:
       selector:
         text:
           multiple: true
+    colors:
+      example: '["#ff3b30", "blue"]'
+      selector:
+        text:
+          multiple: true
 undo:
   fields: &device
     device_id:
@@ -52,3 +57,47 @@ throw:
       example: T20
       selector:
         text:
+led:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    effect:
+      required: true
+      example: segment
+      selector:
+        select:
+          options: [segment, blink, wave, ring, numbers, clear, sweep, wipe, award]
+    segment:
+      example: T20
+      selector:
+        text:
+    color:
+      example: "#ff3b30"
+      selector:
+        text:
+    color2:
+      example: white
+      selector:
+        text:
+    blinks:
+      selector:
+        number:
+          min: 1
+          max: 3
+    duration:
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+    numbers:
+      example: "[20, 19, 18]"
+      selector:
+        object:
+    award:
+      example: ton_80
+      selector:
+        select:
+          options: [bullseye, bust, ton, ton_40, high_ton, ton_80, hat_trick, three_in_a_bed, white_horse, checkout, winner]

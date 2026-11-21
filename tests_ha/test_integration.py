@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import custom_components.granboard  # noqa: F401
 import custom_components.granboard.config_flow  # noqa: F401
@@ -150,4 +150,56 @@ async def test_repeat_frames_count_once(hass: HomeAssistant) -> None:
     coordinator._handle_payload(b"3.6@")
     await hass.async_block_till_done()
     assert hits[-1] == "D20" and len(hits) == 4
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_led_effects_follow_hits_turns_and_service(hass: HomeAssistant) -> None:
+    from homeassistant.core import callback
+
+    from custom_components.granboard import led
+
+    entry = await _setup(hass, options={"connect": False})
+    coordinator = entry.runtime_data
+    writes: list[tuple[str, bytes, bool]] = []
+
+    class FakeClient:
+        async def write_gatt_char(self, uuid, data, response=False):
+            writes.append((uuid, bytes(data), response))
+
+    coordinator._client = FakeClient()
+    coordinator.data.connected = True
+    coordinator.data.write_uuid = "442f1572-8a00-9a28-cbe1-e1d4212d53eb"
+    coordinator._warmup._until = 0
+    turns = []
+    hits = []
+    hass.bus.async_listen("granboard_turn", callback(lambda e: turns.append(e.data)))
+    hass.bus.async_listen("granboard_hit", callback(lambda e: hits.append(e.data)))
+    with patch(f"{CO}.asyncio.sleep", new=AsyncMock()):
+        await hass.services.async_call(
+            "granboard", "new_game", {"game": "501", "players": ["Andrew", "Guest"], "colors": ["green"]}, blocking=True
+        )
+        await hass.async_block_till_done()
+        assert len(writes) == 22  # clear + 20-step sweep + blink
+        writes.clear()
+        for _ in range(3):  # one physical press = three identical frames
+            coordinator._handle_payload(b"3.4@")
+        await hass.async_block_till_done()
+        assert hits[-1]["color"] == "#30d158" and hits[-1]["player"] == "Andrew" and len(hits) == 1
+        assert [w[1][0] for w in writes] == [3, led.WAVE]  # triple 20: 3 blinks + wave
+        assert writes[0][1][1:4] == bytes((0x30, 0xD1, 0x58))
+        writes.clear()
+        await hass.services.async_call("granboard", "next_player", {}, blocking=True)
+        await hass.async_block_till_done()
+        assert turns[-1]["player"] == "Guest" and turns[-1]["color"] == "#0a84ff"
+        assert len(writes) == 21 and writes[-1][1] == bytes(20)  # circular wipe, then clear
+        writes.clear()
+        await hass.services.async_call("granboard", "led", {"effect": "blink", "color": "red"}, blocking=True)
+        await hass.async_block_till_done()
+        assert writes[0][1][0] == led.BLINK and writes[0][1][1:4] == bytes((0xFF, 0x3B, 0x30))
+        writes.clear()
+        hass.config_entries.async_update_entry(entry, options={**entry.options, "led_effects": False})
+        await hass.services.async_call("granboard", "throw", {"segment": "S5"}, blocking=True)
+        await hass.async_block_till_done()
+        assert writes == []
+    coordinator._client = None
     await hass.config_entries.async_unload(entry.entry_id)

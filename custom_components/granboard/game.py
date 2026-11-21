@@ -14,6 +14,7 @@ import copy
 from dataclasses import dataclass, field
 from typing import Any
 
+from .colors import player_color
 from .checkout import suggest_checkout
 from .protocol import Hit
 
@@ -44,6 +45,7 @@ AWARD_THREE_IN_A_BED = "three_in_a_bed"
 AWARD_WHITE_HORSE = "white_horse"
 AWARD_BUST = "bust"
 AWARD_WINNER = "winner"
+AWARD_CHECKOUT = "checkout"
 AWARDS = (
     AWARD_BULLSEYE,
     AWARD_TON,
@@ -81,6 +83,7 @@ class Player:
     best_turn: int = 0
     hits: int = 0  # around the clock targets hit
     finished_rank: int | None = None
+    color: str = ""
 
     def stats(self, game: str) -> dict[str, Any]:
         darts = self.darts
@@ -134,6 +137,7 @@ class Game:
         start: int = 501,
         double_out: bool = False,
         rounds: int | None = None,
+        colors: list[object] | None = None,
     ) -> None:
         game = str(game).strip().lower().replace("-", "_").replace(" ", "_")
         if game in ("301", "501", "701"):
@@ -154,8 +158,9 @@ class Game:
         self.max_rounds = max(0, int(rounds))
         if game == GAME_COUNT_UP and self.max_rounds == 0:
             self.max_rounds = DEFAULT_COUNT_UP_ROUNDS
-        for name in names:
-            player = Player(name=name)
+        colors = list(colors or [])
+        for index, name in enumerate(names):
+            player = Player(name=name, color=player_color(index, colors[index] if index < len(colors) else None))
             if game == GAME_X01:
                 player.score = self.start
             if game == GAME_CRICKET:
@@ -250,6 +255,7 @@ class Game:
         player.score = after
         player.points += hit.score
         if after == 0:
+            awards.append(self._award(AWARD_CHECKOUT, score=self.turn_start_score, segment=hit.segment, double=hit.multiplier == 2))
             self._win(player, awards)
 
     def _throw_cricket(self, hit: Hit, dart: dict[str, Any], awards: list[dict[str, Any]]) -> None:
@@ -308,7 +314,12 @@ class Game:
         return awards
 
     def _award(self, kind: str, **extra: Any) -> dict[str, Any]:
-        return {"type": kind, "player": self.player.name, "player_index": self.current, **extra}
+        return {"type": kind, "player": self.player.name, "player_index": self.current, "color": self.color_of(self.current), **extra}
+
+    def color_of(self, index: int | None) -> str:
+        if index is None or not self.players:
+            return player_color(0)
+        return self.players[index].color or player_color(index)
 
     def _win(self, player: Player, awards: list[dict[str, Any]]) -> None:
         self.winner = player.name
@@ -380,6 +391,7 @@ class Game:
             "round": self.round if playing else None,
             "current_player": self.current if playing else None,
             "current_player_name": self.player.name if self.players else None,
+            "current_player_color": self.color_of(self.current) if self.players else None,
             "darts": list(self.turn),
             "darts_left": DARTS_PER_TURN - len(self.turn),
             "turn_score": 0 if self.turn_bust else sum(d.get("points", d["score"]) if self.game == GAME_CRICKET else d["score"] for d in self.turn),
@@ -390,12 +402,13 @@ class Game:
             "players": [
                 {
                     "name": p.name,
+                    "color": p.color or player_color(i),
                     "score": p.score,
                     **({"marks": dict(p.marks)} if self.game == GAME_CRICKET else {}),
                     **({"target": "Bull" if p.target == 25 else p.target} if self.game == GAME_AROUND_THE_CLOCK else {}),
                     "stats": p.stats(self.game or ""),
                 }
-                for p in self.players
+                for i, p in enumerate(self.players)
             ],
             "history": list(self.history[-20:]),
             "last_awards": list(self.last_awards),

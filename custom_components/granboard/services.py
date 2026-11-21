@@ -1,4 +1,4 @@
-"""granboard.new_game / undo / next_player / end_game / throw."""
+"""granboard.new_game / undo / next_player / end_game / throw / led."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from homeassistant.helpers import config_validation as cv, device_registry as dr
 
 from .const import DOMAIN
 from .coordinator import GranboardCoordinator
+from . import led
+from .colors import parse_color, to_rgb
 from .game import GAMES, GameError, X01_STARTS
 from .protocol import parse_segment
 
@@ -28,8 +30,68 @@ NEW_GAME_SCHEMA = vol.Schema(
         vol.Optional("double_out", default=False): cv.boolean,
         vol.Optional("rounds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=99)),
         vol.Optional("players", default=["Player 1"]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("colors"): vol.All(cv.ensure_list, [vol.Any(cv.string, [vol.Coerce(int)])]),
     }
 )
+
+LED_EFFECTS = ["segment", "blink", "wave", "ring", "numbers", "clear", "sweep", "wipe", "award"]
+LED_SCHEMA = vol.Schema(
+    {
+        **_BASE,
+        vol.Required("effect"): vol.In(LED_EFFECTS),
+        vol.Optional("segment"): cv.string,
+        vol.Optional("color"): vol.Any(cv.string, [vol.Coerce(int)]),
+        vol.Optional("color2"): vol.Any(cv.string, [vol.Coerce(int)]),
+        vol.Optional("blinks", default=1): vol.All(vol.Coerce(int), vol.In([1, 2, 3])),
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=255)),
+        vol.Optional("numbers"): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=1, max=20))]),
+        vol.Optional("award"): cv.string,
+    }
+)
+
+
+def _rgb(value: Any, default: tuple[int, int, int]) -> tuple[int, int, int]:
+    if value is None:
+        return default
+    parsed = parse_color(value)
+    if parsed is None:
+        raise ServiceValidationError(f"Unknown color {value!r}; use #RRGGBB, [r, g, b] or a name like red")
+    return to_rgb(parsed)
+
+
+def led_steps(data: dict[str, Any], player_rgb: tuple[int, int, int]) -> list[led.Step]:
+    """Turn granboard.led service data into LED commands."""
+    effect = data["effect"]
+    color = _rgb(data.get("color"), player_rgb)
+    color2 = _rgb(data.get("color2"), led.WHITE)
+    duration = data.get("duration")
+    try:
+        if effect == "segment":
+            hit = parse_segment(data.get("segment") or "")
+            if data.get("color") is None and data.get("blinks", 1) == 1:
+                return led.plan_hit(hit.as_dict(), color)
+            if not 1 <= hit.number <= 20:
+                return [(led.blink_command(color, duration or 0x14), led.MIN_GAP_MS)]
+            return [(led.hit_command(hit.number, color, data.get("blinks", 1), duration or 0x14), led.MIN_GAP_MS)]
+        if effect == "blink":
+            return [(led.blink_command(color, duration or 0x1E), led.MIN_GAP_MS)]
+        if effect == "wave":
+            return [(led.wave_command(color, color2, duration or 0x05), led.MIN_GAP_MS)]
+        if effect == "ring":
+            return [(led.ring_command(color), led.MIN_GAP_MS)]
+        if effect == "numbers":
+            return [(led.numbers_command(data.get("numbers") or []), led.MIN_GAP_MS)]
+        if effect == "clear":
+            return [(led.clear_command(), led.MIN_GAP_MS)]
+        if effect == "sweep":
+            return led.sweep(color, color2 if data.get("color2") is not None else led.GREEN)
+        if effect == "wipe":
+            return led.turn_wipe(color)
+        if effect == "award":
+            return led.plan_award({"type": data.get("award"), "segment": data.get("segment"), "score": 50}, color)
+    except ValueError as err:
+        raise ServiceValidationError(str(err)) from err
+    return []
 THROW_SCHEMA = vol.Schema({**_BASE, vol.Required("segment"): cv.string})
 PLAIN_SCHEMA = vol.Schema(_BASE)
 
@@ -58,6 +120,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
                 start=call.data["start"],
                 double_out=call.data["double_out"],
                 rounds=call.data.get("rounds"),
+                colors=call.data.get("colors"),
             )
         except GameError as err:
             raise ServiceValidationError(str(err)) from err
@@ -78,12 +141,21 @@ def async_setup_services(hass: HomeAssistant) -> None:
             raise ServiceValidationError(str(err)) from err
         _coordinator(hass, call).record_hit(hit)
 
+    async def led_service(call: ServiceCall) -> None:
+        coordinator = _coordinator(hass, call)
+        if not coordinator.can_write:
+            raise ServiceValidationError("The Granboard is not connected, so its lights cannot be changed")
+        game = coordinator.game
+        rgb = to_rgb(game.color_of(game.current if game.status == "playing" else None))
+        coordinator.led_play(led_steps(dict(call.data), rgb))
+
     handlers: dict[str, tuple[Any, vol.Schema]] = {
         "new_game": (new_game, NEW_GAME_SCHEMA),
         "undo": (undo, PLAIN_SCHEMA),
         "next_player": (next_player, PLAIN_SCHEMA),
         "end_game": (end_game, PLAIN_SCHEMA),
         "throw": (throw, THROW_SCHEMA),
+        "led": (led_service, LED_SCHEMA),
     }
     for name, (handler, schema) in handlers.items():
         if not hass.services.has_service(DOMAIN, name):

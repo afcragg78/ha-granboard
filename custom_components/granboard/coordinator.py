@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -34,22 +35,29 @@ from .const import (
     CONF_BUTTON_NEXT,
     CONF_CONNECT,
     CONF_DEBOUNCE_MS,
+    CONF_LED_FX,
     DEFAULT_BUTTON_NEXT,
     DEFAULT_DEBOUNCE_MS,
+    DEFAULT_LED_FX,
     DOMAIN,
     EVENT_AWARD,
     EVENT_BUTTON,
     EVENT_HIT,
+    EVENT_TURN,
     NOTIFY_UUID,
     SERVICE_UUID,
     STORAGE_VERSION,
     WRITE_UUID,
 )
+from . import led
+from .colors import to_rgb
 from .game import Game
 from .protocol import Button, FrameBuffer, Hit, decode_frame
 from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
 
 _LOGGER = logging.getLogger(__name__)
+
+LED_QUEUE_MAX = 48
 
 type GranboardConfigEntry = ConfigEntry["GranboardCoordinator"]
 
@@ -81,6 +89,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._buffer = FrameBuffer()
         self._warmup = WarmupGate()
         self._dedupe = DuplicateFilter(self.debounce_ms)
+        self._led_queue: deque[led.Step] = deque()
+        self._led_task: asyncio.Task[None] | None = None
+        self._write_response = False
+        self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None
         self._device: BLEDevice | None = None
         self._disconnected = asyncio.Event()
@@ -99,6 +111,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     @property
     def button_next_player(self) -> bool:
         return bool(self.entry.options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT))
+
+    @property
+    def led_effects(self) -> bool:
+        return bool(self.entry.options.get(CONF_LED_FX, DEFAULT_LED_FX))
 
     @property
     def debounce_ms(self) -> int:
@@ -215,6 +231,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             await self._disconnected.wait()
         finally:
             self._client = None
+            self._led_queue.clear()
             with contextlib.suppress(Exception):
                 await client.disconnect()
 
@@ -233,6 +250,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
                     notify = char.uuid
                 if write is None and ("write" in char.properties or "write-without-response" in char.properties):
                     write = char.uuid
+                    self._write_response = "write-without-response" not in char.properties
         for line in lines:
             _LOGGER.debug("Granboard %s GATT: %s", self.address, line)
         if notify is None:
@@ -303,8 +321,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if isinstance(decoded, Button):
             self.hass.bus.async_fire(EVENT_BUTTON, self._event_base({"raw": decoded.raw}))
             if self.button_next_player and self.game.status == "playing":
-                self._fire_awards(self.game.next_player())
-                self._game_changed()
+                self.next_player()
             self.async_update_listeners()
             return
         if not decoded.known:
@@ -321,10 +338,17 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         """A dart from the board or the throw service."""
         self.data.last_hit = hit
         self.data.last_hit_time = datetime.now(timezone.utc)
-        self.hass.bus.async_fire(EVENT_HIT, self._event_base(hit.as_dict()))
-        if self.game.status == "playing":
-            self._fire_awards(self.game.throw(hit))
+        playing = self.game.status == "playing"
+        color = self.game.color_of(self.game.current) if playing else self.game.color_of(None)
+        extra = {"player": self.game.player.name, "player_index": self.game.current} if playing else {}
+        self.hass.bus.async_fire(EVENT_HIT, self._event_base({**hit.as_dict(), **extra, "color": color}))
+        awards: list[dict[str, Any]] = []
+        if playing:
+            awards = self.game.throw(hit)
+            self._fire_awards(awards)
             self._game_changed()
+        if self.led_effects:
+            self.led_play(led.plan_throw(hit.as_dict(), awards, to_rgb(color)))
         self.async_update_listeners()
 
     def _event_base(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -344,6 +368,8 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     def new_game(self, **kwargs: Any) -> None:
         self.game.new_game(**kwargs)
         self._game_changed()
+        if self.led_effects:
+            self.led_play(led.plan_new_game(to_rgb(self.game.color_of(0))))
 
     @callback
     def undo(self) -> None:
@@ -352,13 +378,64 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
 
     @callback
     def next_player(self) -> None:
-        self._fire_awards(self.game.next_player())
+        awards = self.game.next_player()
+        self._fire_awards(awards)
         self._game_changed()
+        steps = [s for a in awards for s in led.plan_award(a)] if self.led_effects else []
+        if self.game.status == "playing":
+            color = self.game.color_of(self.game.current)
+            self.hass.bus.async_fire(
+                EVENT_TURN,
+                self._event_base(
+                    {"player": self.game.player.name, "player_index": self.game.current, "color": color, "round": self.game.round}
+                ),
+            )
+            if self.led_effects:
+                steps += led.plan_next_player(to_rgb(color))
+        self.led_play(steps)
 
     @callback
     def end_game(self) -> None:
         self.game.end_game()
         self._game_changed()
+        if self.led_effects:
+            self.led_play([(led.clear_command(), led.MIN_GAP_MS)])
+
+    # ------------------------------------------------------------ LED ring
+    @property
+    def can_write(self) -> bool:
+        return self._client is not None and self.data.connected and bool(self.data.write_uuid)
+
+    @callback
+    def led_play(self, steps: list[led.Step], replace: bool = True) -> None:
+        """Queue LED commands. A new effect replaces what is still waiting, so the
+        newest dart always lights first and nothing piles up."""
+        if not steps or not self.can_write:
+            return
+        if replace:
+            self._led_queue.clear()
+        room = LED_QUEUE_MAX - len(self._led_queue)
+        self._led_queue.extend(steps[: max(0, room)])
+        if self._led_task is None or self._led_task.done():
+            self._led_task = self.entry.async_create_background_task(
+                self.hass, self._led_worker(), name=f"{DOMAIN}-{self.address}-led"
+            )
+
+    async def _led_worker(self) -> None:
+        while self._led_queue:
+            data, wait_ms = self._led_queue.popleft()
+            client, uuid = self._client, self.data.write_uuid
+            if client is None or not uuid:
+                self._led_queue.clear()
+                return
+            try:
+                await client.write_gatt_char(uuid, data, response=self._write_response)
+                self.led_writes += 1
+            except Exception as err:  # noqa: BLE001 - never let the ring break hit reading
+                _LOGGER.debug("Granboard %s LED write failed: %s", self.address, err)
+                self._led_queue.clear()
+                return
+            await asyncio.sleep(max(led.MIN_GAP_MS, wait_ms) / 1000)
 
     async def _async_update_data(self) -> BoardData:
         return self.data

@@ -85,3 +85,18 @@ logger:
 pytest                                     # pure decoding / game tests, no Home Assistant needed
 pytest tests_ha -o asyncio_mode=auto       # needs pytest-homeassistant-custom-component
 ```
+
+
+## Board lights
+
+With **Light The Board On Hits** on (Configure), the integration drives the board's LED ring over Bluetooth like the Granboard app does. Every dart blinks its segment in the thrower's colour, awards play their own effects, and a circular wipe in the next player's colour runs when the turn changes. Use `granboard.led` for your own effects, for example:
+
+```yaml
+action: granboard.led
+data:
+  effect: segment
+  segment: T20
+  color: "#ff3b30"
+```
+
+The LED command format comes from the community reference [keenanlk/granboard-ble-codes](https://github.com/keenanlk/granboard-ble-codes), tested there on a GranBoard 3s.

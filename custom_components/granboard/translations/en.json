@@ -26,9 +26,10 @@
       "init": {
         "data": {
           "button_next_player": "Board Button Ends The Turn",
-          "debounce_ms": "Repeat Hit Window (ms)"
+          "debounce_ms": "Repeat Hit Window (ms)",
+          "led_effects": "Light The Board On Hits"
         },
-        "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off)."
+        "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off). Light The Board On Hits blinks the board's LED ring in the player's colour on every dart, plays award effects and a circular wipe when the turn changes, like the Granboard app."
       }
     }
   },
@@ -106,6 +107,10 @@
         "players": {
           "name": "Players",
           "description": "Player names in throwing order."
+        },
+        "colors": {
+          "name": "Player Colors",
+          "description": "One colour per player, in order: #RRGGBB or a name such as red, blue, green. Missing ones use the default palette."
         }
       }
     },
@@ -150,6 +155,48 @@
         "segment": {
           "name": "Segment",
           "description": "T20, D16, S5, SB (25), DB (50), or MISS."
+        }
+      }
+    },
+    "led": {
+      "name": "Board Lights",
+      "description": "Play an effect on the board's LED ring. Colour defaults to the current player's colour.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Which Granboard (optional with one board)."
+        },
+        "effect": {
+          "name": "Effect",
+          "description": "segment, blink, wave, ring, numbers, clear, sweep, wipe or award."
+        },
+        "segment": {
+          "name": "Segment",
+          "description": "For segment or award effects, e.g. T20, D5, SB, DB."
+        },
+        "color": {
+          "name": "Color",
+          "description": "#RRGGBB, [r, g, b] or a colour name."
+        },
+        "color2": {
+          "name": "Second Color",
+          "description": "Second wave or sweep colour."
+        },
+        "blinks": {
+          "name": "Blinks",
+          "description": "1 to 3, for segment."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Board frames (speed for wave)."
+        },
+        "numbers": {
+          "name": "Numbers",
+          "description": "Numbers 1-20 to keep lit (numbers effect, orange)."
+        },
+        "award": {
+          "name": "Award",
+          "description": "Award effect to preview."
         }
       }
     }

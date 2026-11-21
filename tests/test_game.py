@@ -52,14 +52,14 @@ def test_double_out_rules():
     assert g.players[0].score == 40
     assert "bust" in throw(g, "S20", "S19")  # leaves 1
     g.undo(); g.undo()
-    assert throw(g, "D20") == ["winner"]
+    assert throw(g, "D20") == ["checkout", "winner"]
     assert g.status == "finished" and g.winner == "A"
 
 
 def test_bullseye_counts_as_double_out():
     g = x01(double_out=True)
     g.players[0].score = g.turn_start_score = 50
-    assert throw(g, "DB") == ["bullseye", "winner"]
+    assert throw(g, "DB") == ["bullseye", "checkout", "winner"]
 
 
 def test_single_out_wins_on_any_dart():
