@@ -1,6 +1,34 @@
-# Granboard
+<p align="center">
+  <img src="images/logo.png" alt="Granboard for Home Assistant" width="200">
+</p>
+
+<h1 align="center">Granboard for Home Assistant</h1>
+
+<p align="center">
+  <b>Turn your Granboard 3 into a fully connected smart dartboard.</b><br>
+  Live hits over Bluetooth, games scored inside Home Assistant, board lighting, WLED effects, and custom sounds.
+</p>
+
+<p align="center">
+  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS Custom"></a>
+  <a href="https://github.com/afcragg78/ha-granboard/releases"><img src="https://img.shields.io/github/v/release/afcragg78/ha-granboard" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/Home%20Assistant-2025.1%2B-18BCF2.svg" alt="Home Assistant 2025.1+">
+</p>
+
+---
 
 Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. It connects through Home Assistant's Bluetooth integration (a USB adapter or an ESPHome Bluetooth proxy), turns every dart into an event, and runs the game (x01, Cricket, Count-Up, Around The Clock) inside Home Assistant, so a dashboard only has to display it.
+
+## Features
+
+- **Live Hits** – every dart becomes a Home Assistant event and sensor update, with segment, score, and ring.
+- **Games Built In** – x01 (with double out), Cricket, Count-Up, and Around The Clock, with undo, next player, and clear game.
+- **Player Colors** – each player gets a sharp, fully saturated color on the board and on your lights.
+- **Board Lighting** – hit flashes, award effects (Bullseye, Ton 80, Hat Trick and more), and the circular wipe between turns, like the official app.
+- **LED Ring Light** – use the board's ring as a light between games, with 15 effects and 64 WLED-style palettes.
+- **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
+- **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
+- **App Kill Switch** – release the board with one tap so the official Granboard app can connect.
 
 **This project is unofficial and is not affiliated with, endorsed by, or supported by Granboard / GRAN Darts.** The Bluetooth protocol is community reverse-engineered.
 

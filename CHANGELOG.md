@@ -2,6 +2,8 @@
 
 ## 0.2.4
 
+- New integration logo and icon (shown in Home Assistant 2026.3+ via the brand folder) and a refreshed README.
+
 - New **LED Ring** light (`light.<board>_led_ring`): use the board's LED ring like a WLED light between games. Colour, brightness (scaled into the colour, the board has no brightness setting) and 15 effects: Solid, Blink, Breathe, Heartbeat, Wave, Color Cycle, Palette Steps, Chase, Rainbow Chase, Bounce, Circular Wipe, Twinkle, Fire Flicker, Police and Lightning.
 - New **Ring Palette** select with 64 WLED-style palettes (Default, Color 1, Colors 1&2, Color Gradient, Rainbow, Party, Ocean, Lava, Sunset, Aurora, Tiamat, ...). Palette-aware effects take their colours from it.
 - New **Ring Speed** and **Ring Intensity** numbers (0-255, like WLED) and **Ring Color 2** text (`#RRGGBB`, empty = the opposite of the light's colour). Everything is restored after a restart.
