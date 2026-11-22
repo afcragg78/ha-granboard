@@ -21,9 +21,11 @@ from .const import (
     CONF_BUTTON_NEXT,
     CONF_DEBOUNCE_MS,
     CONF_LED_FX,
+    CONF_ALEXA_AUDIO,
     CONF_SOUND_PLAYER,
     CONF_SOUND_VOLUMES,
     CONF_SOUNDS,
+    DEFAULT_ALEXA_AUDIO,
     CONF_WLED_ENABLED,
     CONF_WLED_FLASH_MS,
     CONF_WLED_LIGHTS,
@@ -145,13 +147,15 @@ class GranboardOptionsFlow(OptionsFlow):
         if user_input is not None:
             player = user_input.get(CONF_SOUND_PLAYER) or None
             sounds = {k: str(user_input.get(k) or "").strip() for k in SOUND_KEYS if str(user_input.get(k) or "").strip()}
-            return self._save(**{CONF_SOUND_PLAYER: player, CONF_SOUNDS: sounds})
+            alexa = bool(user_input.get(CONF_ALEXA_AUDIO, DEFAULT_ALEXA_AUDIO))
+            return self._save(**{CONF_SOUND_PLAYER: player, CONF_SOUNDS: sounds, CONF_ALEXA_AUDIO: alexa})
         options = self.config_entry.options
         current = options.get(CONF_SOUNDS) or {}
         fields: dict[Any, Any] = {
             vol.Optional(CONF_SOUND_PLAYER, description={"suggested_value": options.get(CONF_SOUND_PLAYER)}): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="media_player")
-            )
+            ),
+            vol.Required(CONF_ALEXA_AUDIO, default=options.get(CONF_ALEXA_AUDIO, DEFAULT_ALEXA_AUDIO)): bool,
         }
         for key in SOUND_KEYS:
             fields[vol.Optional(key, description={"suggested_value": current.get(key, "")})] = selector.TextSelector()

@@ -44,7 +44,7 @@
       },
       "sounds": {
         "title": "Sounds",
-        "description": "Pick the speaker, then a sound for each moment, or use Sound Theme folders (/config/www/granboard/sounds/<theme>/<trigger>/*.mp3). Put single files in /config/www/granboard/sounds/ and enter them as /local/granboard/sounds/name.mp3, or use a media-source:// path from Media. Leave a box empty for no sound. One sound plays per dart: an award sound wins over the hit sound, and Any Hit is used when the specific one is empty.",
+        "description": "Pick the speaker, then a sound for each moment, or use Sound Theme folders (/config/www/granboard/sounds/<theme>/<trigger>/*.mp3). Put single files in /config/www/granboard/sounds/ and enter them as /local/granboard/sounds/name.mp3, or use a media-source:// path from Media. Leave a box empty for no sound. One sound plays per dart: an award sound wins over the hit sound, and Any Hit is used when the specific one is empty. Alexa-Compatible Audio is applied automatically when the speaker is an Alexa Media Player: clips are converted (48 kbps, 24 kHz mono MP3, max 240 s) and played over a public HTTPS link. Turn it on to force that for other speakers.",
         "data": {
           "sound_player": "Speaker",
           "hit": "Any Hit (Fallback)",
@@ -66,7 +66,8 @@
           "checkout": "Checkout",
           "winner": "Winner",
           "next_player": "Next Player / Board Clear",
-          "game_start": "Game Start"
+          "game_start": "Game Start",
+          "alexa_audio": "Alexa-Compatible Audio"
         }
       },
       "volumes": {

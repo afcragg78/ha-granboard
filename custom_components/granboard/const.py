@@ -28,6 +28,8 @@ STORAGE_VERSION = 1
 CONF_SOUND_PLAYER = "sound_player"
 CONF_SOUNDS = "sounds"
 CONF_SOUND_VOLUMES = "sound_volumes"
+CONF_ALEXA_AUDIO = "alexa_audio"
+DEFAULT_ALEXA_AUDIO = False  # Alexa Media Player speakers always convert; this forces it for others
 EVENT_SOUND = "granboard_sound"
 
 CONF_WLED_LIGHTS = "wled_lights"

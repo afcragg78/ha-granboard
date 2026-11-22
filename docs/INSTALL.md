@@ -262,6 +262,19 @@ automation:
           media_content_type: music
 ```
 
+### Amazon Echo / Alexa Media Player
+
+Amazon Echo speakers cannot play a normal `media_player.play_media` URL ("Direct music streaming isn't supported"). They need an MP3 that Amazon's servers can fetch over public HTTPS, encoded at 48 kbps, 16000 / 22050 / 24000 Hz, and no longer than 240 seconds.
+
+When the speaker in Configure > Sounds is an **Alexa Media Player** device, Granboard does this for you:
+
+1. It converts the chosen clip with Home Assistant's ffmpeg (included on Home Assistant OS) to a 48 kbps, 24 kHz mono MP3, trimmed to 240 seconds.
+2. The converted file is cached in `/config/www/granboard/sounds/.alexa_cache/` (this hidden folder is not treated as a Sound Theme).
+3. It is played with `notify.alexa_media` as SSML `<audio src="https://YOUR-NABU-CASA-URL/local/granboard/sounds/.alexa_cache/....mp3"/>` (`type: tts`). The public URL comes from your Home Assistant external address (Home Assistant Cloud / Nabu Casa works).
+4. The usual volume cap (never above 60 %) still applies. One sound plays per dart.
+
+Turn on **Alexa-Compatible Audio** in Configure > Sounds to force the same conversion for a non-Alexa speaker. If conversion fails or Home Assistant has no public HTTPS URL, the original file is played instead and a warning is logged.
+
 ## 9. Using The Official Granboard App (Kill Switch)
 
 Because the board only takes one connection:

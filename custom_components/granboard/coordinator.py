@@ -40,6 +40,7 @@ from .const import (
     CONF_CONNECT,
     CONF_DEBOUNCE_MS,
     CONF_LED_FX,
+    CONF_ALEXA_AUDIO,
     CONF_SOUND_PLAYER,
     CONF_SOUND_VOLUMES,
     CONF_SOUNDS,
@@ -59,6 +60,7 @@ from .const import (
     WRITE_UUID,
 )
 from . import led
+from .alexa_audio import alexa_ssml, local_www_path, prepare_cached_clip, public_cache_url, use_alexa_audio
 from .colors import to_rgb
 from .sounds import (
     THEME_OFF,
@@ -524,16 +526,86 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         volume = volume_level((self.entry.options.get(CONF_SOUND_VOLUMES) or {}).get(key))
         await self._async_play(player, url, volume)
 
+    def _player_platform(self, entity_id: str) -> str | None:
+        from homeassistant.helpers import entity_registry as er
+
+        entity = er.async_get(self.hass).async_get(entity_id)
+        return entity.platform if entity is not None else None
+
+    def _ffmpeg_binary(self) -> str:
+        data = self.hass.data.get("ffmpeg")
+        binary = getattr(data, "binary", None)
+        if binary:
+            return str(binary)
+        try:
+            from homeassistant.components.ffmpeg import get_ffmpeg_manager
+
+            return str(get_ffmpeg_manager(self.hass).binary)
+        except Exception:  # noqa: BLE001 - fall back to PATH
+            return "ffmpeg"
+
+    async def _async_alexa_url(self, original: str, processed: str) -> str | None:
+        """Convert the clip to an Alexa-safe MP3 and return a public HTTPS URL."""
+        from homeassistant.helpers.network import get_url
+
+        www_root = Path(self.hass.config.path("www"))
+        local = local_www_path(www_root, original) or local_www_path(www_root, processed)
+        source: str | Path
+        if local is not None and local.is_file():
+            source = local
+        else:
+            source = processed
+        try:
+            dest = await self.hass.async_add_executor_job(
+                prepare_cached_clip, self._ffmpeg_binary(), source, self.sounds_root
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Granboard Alexa conversion failed for %s", original)
+            return None
+        if dest is None:
+            return None
+        try:
+            base = get_url(self.hass, prefer_external=True, allow_internal=False)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Granboard has no public HTTPS URL for Alexa: %s", err)
+            return None
+        return public_cache_url(base, dest.name)
+
     async def _async_play(self, player: str, url: str, volume: float | None) -> None:
         try:
-            if url.startswith("media-source://"):
+            play_url = url
+            if play_url.startswith("media-source://"):
                 from homeassistant.components import media_source
 
-                resolved = await media_source.async_resolve_media(self.hass, url, player)
-                url = resolved.url
+                resolved = await media_source.async_resolve_media(self.hass, play_url, player)
+                play_url = resolved.url
             from homeassistant.components.media_player import async_process_play_media_url
 
-            url = async_process_play_media_url(self.hass, url)
+            processed = async_process_play_media_url(self.hass, play_url)
+            alexa = use_alexa_audio(
+                self._player_platform(player), bool(self.entry.options.get(CONF_ALEXA_AUDIO, False))
+            )
+            if alexa:
+                https_url = await self._async_alexa_url(play_url, processed)
+                if https_url:
+                    if volume is not None:
+                        await self.hass.services.async_call(
+                            "media_player",
+                            "volume_set",
+                            {"entity_id": player, "volume_level": min(volume, 0.6)},
+                            blocking=True,
+                        )
+                    await self.hass.services.async_call(
+                        "notify",
+                        "alexa_media",
+                        {"message": alexa_ssml(https_url), "target": player, "data": {"type": "tts"}},
+                        blocking=False,
+                    )
+                    return
+                _LOGGER.warning(
+                    "Granboard Alexa conversion failed for %s, playing the original file",
+                    play_url,
+                )
             if volume is not None:
                 await self.hass.services.async_call(
                     "media_player", "volume_set", {"entity_id": player, "volume_level": min(volume, 0.6)}, blocking=True
@@ -541,7 +613,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             await self.hass.services.async_call(
                 "media_player",
                 "play_media",
-                {"entity_id": player, "media_content_id": url, "media_content_type": "music"},
+                {"entity_id": player, "media_content_id": processed, "media_content_type": "music"},
                 blocking=False,
             )
         except Exception as err:  # noqa: BLE001 - a sound must never break scoring

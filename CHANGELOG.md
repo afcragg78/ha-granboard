@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- **Alexa-compatible audio**: Amazon Echo speakers (Alexa Media Player) cannot play a normal `media_player.play_media` stream ("Direct music streaming isn't supported"). When the configured speaker is an Alexa Media Player, Granboard now converts the chosen clip with Home Assistant's ffmpeg to a 48 kbps, 24 kHz mono MP3 no longer than 240 seconds, caches it under `/config/www/granboard/sounds/.alexa_cache/`, and plays it with `notify.alexa_media` as SSML `<audio src="..."/>` (`type: tts`) using a public HTTPS URL from `get_url(..., prefer_external=True)` (Nabu Casa works). The 60 % volume cap still applies. The cache is skipped by Sound Theme discovery. If conversion or the public URL fails, the original file is played and a warning is logged.
+- New Configure > Sounds option **Alexa-Compatible Audio** (off by default) forces the same conversion for a non-Alexa speaker. Alexa Media Player speakers always use it.
+
+
 ## 0.2.9
 
 - **Sound Themes**: drop a folder of clips per trigger and switch packs from the new **Sound Theme** select (`select.<board>_sound_theme`). Put files in `/config/www/granboard/sounds/<theme>/<trigger>/` as `.mp3`, `.wav` or `.ogg`, for example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. The dropdown lists **Off** plus every theme folder it finds. It rescans when Home Assistant starts, when the dropdown is opened, and on each play, so a new folder or file is picked up without a restart (except the first time you create `/config/www`). The chosen theme is restored after a restart.
