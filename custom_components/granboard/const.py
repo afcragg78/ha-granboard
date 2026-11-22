@@ -14,6 +14,7 @@ EVENT_AWARD = "granboard_award"
 EVENT_TURN = "granboard_turn"
 
 CONF_CONNECT = "connect"
+CONF_PREFERRED_ADAPTER = "preferred_bluetooth_adapter"
 CONF_BUTTON_NEXT = "button_next_player"
 DEFAULT_BUTTON_NEXT = True
 CONF_AUTO_NEXT = "auto_next_player"

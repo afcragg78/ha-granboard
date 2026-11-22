@@ -30,6 +30,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -38,6 +39,7 @@ from .const import (
     CONF_AUTO_NEXT,
     CONF_BUTTON_NEXT,
     CONF_CONNECT,
+    CONF_PREFERRED_ADAPTER,
     CONF_DEBOUNCE_MS,
     CONF_LED_FX,
     CONF_ALEXA_AUDIO,
@@ -70,6 +72,11 @@ from .sounds import (
     SOUNDS_WWW_SUBPATH,
 )
 from .game import Game
+from .preferred_adapter import (
+    PREFERRED_ADAPTER_AUTO,
+    ble_device_for_preferred_adapter,
+    preferred_adapter_value,
+)
 from .protocol import Button, FrameBuffer, Hit, decode_frame
 from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
 from .wled_sections import WledSections
@@ -242,8 +249,56 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             with contextlib.suppress(TimeoutError):
                 await asyncio.wait_for(self._retry_now.wait(), timeout=delay)
 
+    def _preferred_adapter(self) -> str:
+        """Configured scanner source, or Automatic."""
+        return preferred_adapter_value(self.entry.options.get(CONF_PREFERRED_ADAPTER))
+
+    def _resolve_ble_device(self) -> BLEDevice | None:
+        """The board's BLEDevice, pinned to a preferred adapter when one is set.
+
+        Automatic uses Home Assistant's usual scanner choice. A preferred
+        adapter is used only when that scanner can currently see the board;
+        there is no silent fallback to another radio.
+        """
+        preferred = self._preferred_adapter()
+        if preferred == PREFERRED_ADAPTER_AUTO:
+            return bluetooth.async_ble_device_from_address(
+                self.hass, self.address, connectable=True
+            )
+        seen = bluetooth.async_scanner_devices_by_address(
+            self.hass, self.address, connectable=True
+        )
+        paths = [
+            (
+                str(getattr(getattr(item, "scanner", None), "source", "") or ""),
+                item.ble_device,
+            )
+            for item in seen
+        ]
+        device = ble_device_for_preferred_adapter(preferred, paths)
+        if device is None:
+            _LOGGER.error(
+                "Granboard %s is not visible to the preferred Bluetooth adapter %s",
+                self.address,
+                preferred,
+            )
+            raise HomeAssistantError(
+                "The board is not visible to the preferred Bluetooth adapter "
+                f"({preferred}). Choose Automatic, or pick an adapter that can "
+                "see the board."
+            )
+        return device
+
+    def _advertisement_from_preferred(self, info: BluetoothServiceInfoBleak) -> bool:
+        """True when Automatic, or when this advert came from the chosen adapter."""
+        preferred = self._preferred_adapter()
+        if preferred == PREFERRED_ADAPTER_AUTO:
+            return True
+        source = str(getattr(info, "source", "") or "").strip()
+        return bool(source) and source.lower() == preferred.lower()
+
     async def _session(self) -> None:
-        device = bluetooth.async_ble_device_from_address(self.hass, self.address, connectable=True)
+        device = self._resolve_ble_device()
         if device is None:
             raise ConnectionError("not visible to any connectable Bluetooth adapter or proxy")
         self._device = device
@@ -303,7 +358,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         return notify
 
     def _fresh_device(self) -> BLEDevice:
-        device = bluetooth.async_ble_device_from_address(self.hass, self.address, connectable=True)
+        device = self._resolve_ble_device()
         if device is not None:
             self._device = device
         if self._device is None:
@@ -324,7 +379,13 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         changed = info.rssi != self.data.rssi
         self.data.rssi = info.rssi
         # Released: never reconnect from an advert. The phone app owns the board.
-        if self.enabled and not self.data.connected and not self._stopping:
+        # With a preferred adapter, only that radio can wake the reconnect wait.
+        if (
+            self.enabled
+            and not self.data.connected
+            and not self._stopping
+            and self._advertisement_from_preferred(info)
+        ):
             self._retry_now.set()
         if changed:
             self.async_update_listeners()

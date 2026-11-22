@@ -158,6 +158,7 @@ Go to **Settings > Devices & Services > Granboard > Configure** (on newer versio
 
 | Option | Default | What It Does |
 |---|---|---|
+| **Preferred Bluetooth Adapter** | Automatic | Leaves the radio choice to Home Assistant, the same as before. Pick a specific connectable USB dongle or Bluetooth proxy to always connect the board through that radio. If the chosen adapter cannot see the board, the connection fails with a clear error instead of silently using another scanner. The Granboard Connection switch and Release Board still disconnect immediately and stop all retries. |
 | **Board Button Ends The Turn** | On | During a game, pressing the button on the board moves to the next player (and plays the circular wipe). Turn it off if you use the button for something else. The button always fires a `granboard_button` event either way. |
 | **Next Dart After A Full Turn Starts The Next Player** | On | If someone throws a 4th dart without anyone pressing Next Player (for example, forgot to pull the darts), that dart starts the next player's turn and counts for them instead of being ignored. Turn it off if you'd rather extra darts be ignored until Next Player is pressed. |
 | **Repeat Hit Window (ms)** | 250 | The board often sends the same hit 2 or 3 times for one dart. A hit identical to the previous one that arrives within this many milliseconds is ignored. 0 turns the filter off, and the maximum is 2000. Raise it (300 to 500) if single darts count twice. Lower it if two quick darts in the same bed only count once. |

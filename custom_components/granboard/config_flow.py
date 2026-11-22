@@ -9,7 +9,9 @@ import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
+    async_current_scanners,
     async_discovered_service_info,
+    async_scanner_devices_by_address,
 )
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_ADDRESS
@@ -20,6 +22,7 @@ from .const import (
     CONF_AUTO_NEXT,
     CONF_BUTTON_NEXT,
     CONF_DEBOUNCE_MS,
+    CONF_PREFERRED_ADAPTER,
     CONF_LED_FX,
     CONF_ALEXA_AUDIO,
     CONF_SOUND_PLAYER,
@@ -36,6 +39,11 @@ from .const import (
     DEFAULT_LED_FX,
     DEFAULT_WLED_FLASH_MS,
     DOMAIN,
+)
+from .preferred_adapter import (
+    PREFERRED_ADAPTER_AUTO,
+    preferred_adapter_label,
+    preferred_adapter_value,
 )
 from .sections import CUSTOM, POSITIONS
 from .sounds import SOUND_KEYS
@@ -54,6 +62,65 @@ def is_granboard(info: BluetoothServiceInfoBleak) -> bool:
     if any(isinstance(n, str) and n.upper().startswith(BOARD_NAME) for n in names):
         return True
     return SERVICE_UUID in {u.lower() for u in (info.service_uuids or [])}
+
+
+
+def _preferred_adapter_dropdown(
+    hass: Any, board_address: str, current: str
+) -> list[dict[str, str]]:
+    """Connectable scanners, labeled with name, source, and RSSI when known."""
+    options: list[dict[str, str]] = [
+        {"value": PREFERRED_ADAPTER_AUTO, "label": "Automatic"}
+    ]
+    rssi_by: dict[str, int] = {}
+    try:
+        if board_address:
+            for item in async_scanner_devices_by_address(
+                hass, board_address, connectable=True
+            ):
+                scanner = getattr(item, "scanner", None)
+                source = str(getattr(scanner, "source", "") or "").strip()
+                rssi = getattr(getattr(item, "advertisement", None), "rssi", None)
+                if source and rssi is not None:
+                    try:
+                        rssi_by[source.lower()] = int(rssi)
+                    except (TypeError, ValueError):
+                        pass
+    except Exception:
+        pass
+    seen = {PREFERRED_ADAPTER_AUTO}
+    try:
+        scanners = list(async_current_scanners(hass))
+    except Exception:
+        scanners = []
+    rows: list[tuple[str, str, int | None]] = []
+    for scanner in scanners:
+        if not getattr(scanner, "connectable", True):
+            continue
+        source = str(getattr(scanner, "source", "") or "").strip()
+        if not source:
+            continue
+        name = str(
+            getattr(scanner, "name", None)
+            or getattr(scanner, "adapter", None)
+            or source
+        )
+        rows.append((name, source, rssi_by.get(source.lower())))
+    rows.sort(key=lambda row: (row[0].lower(), row[1].lower()))
+    for name, source, rssi in rows:
+        key = source.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        options.append(
+            {"value": source, "label": preferred_adapter_label(name, source, rssi)}
+        )
+    chosen = preferred_adapter_value(current)
+    if chosen != PREFERRED_ADAPTER_AUTO and chosen.lower() not in seen:
+        options.append(
+            {"value": chosen, "label": preferred_adapter_label(chosen, chosen)}
+        )
+    return options
 
 
 class GranboardConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -129,10 +196,32 @@ class GranboardOptionsFlow(OptionsFlow):
 
     async def async_step_general(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
+            user_input[CONF_PREFERRED_ADAPTER] = preferred_adapter_value(
+                user_input.get(CONF_PREFERRED_ADAPTER)
+            )
             return self._save(**user_input)
         options = self.config_entry.options
+        try:
+            adapter_options = _preferred_adapter_dropdown(
+                self.hass,
+                str(self.config_entry.data.get(CONF_ADDRESS, "") or ""),
+                preferred_adapter_value(options.get(CONF_PREFERRED_ADAPTER)),
+            )
+        except Exception:
+            adapter_options = [
+                {"value": PREFERRED_ADAPTER_AUTO, "label": "Automatic"}
+            ]
         schema = vol.Schema(
             {
+                vol.Required(
+                    CONF_PREFERRED_ADAPTER,
+                    default=preferred_adapter_value(options.get(CONF_PREFERRED_ADAPTER)),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=adapter_options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Required(CONF_BUTTON_NEXT, default=options.get(CONF_BUTTON_NEXT, DEFAULT_BUTTON_NEXT)): bool,
                 vol.Required(CONF_AUTO_NEXT, default=options.get(CONF_AUTO_NEXT, DEFAULT_AUTO_NEXT)): bool,
                 vol.Required(

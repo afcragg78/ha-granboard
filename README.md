@@ -64,7 +64,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 2. **HACS:** **HACS > ⋮ > Custom repositories**, add `https://github.com/afcragg78/ha-granboard` as type **Integration**, download **Granboard**, then **restart Home Assistant**. (Manual install: copy `custom_components/granboard` to `/config/custom_components/` and restart.)
 3. **Close the Granboard phone app** on every device. The board takes one connection at a time. Turn the board on; its light flashes red while it waits.
 4. **Add it:** accept the **Discovered: GRANBOARD** card in **Settings > Devices & Services**, or **+ Add Integration > Granboard** and pick or type its Bluetooth address (like `AA:BB:CC:11:22:33`).
-5. **Configure** (optional): **Granboard > Configure** for General options, Sounds and Sound Volumes.
+5. **Configure** (optional): **Granboard > Configure** for General options, Sounds and Sound Volumes. Under General, **Preferred Bluetooth Adapter** (default Automatic) can pin the board to a specific USB dongle or Bluetooth proxy so it does not connect through a farther radio.
 6. **Play:** call `granboard.new_game` (for example `game: x01`, `start: 501`, `players: [Andy, Sam]`) from a dashboard button and start throwing.
 
 To update: HACS > Granboard > **Update**, then restart Home Assistant.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Configure > General has a **Preferred Bluetooth Adapter** option. Automatic (the default) leaves the radio choice to Home Assistant, the same as before. Pick a specific connectable adapter or proxy, such as a USB dongle or an ESPHome Bluetooth proxy near the board, to always connect through that radio. If the chosen adapter cannot see the board, the connection fails with a clear error instead of silently using another scanner (for example a farther proxy in another room). Advertisement-wake reconnects also honor the choice. The Granboard Connection switch and Release Board still disconnect immediately and stop all retries.
+
 ## 0.3.0
 
 - **Alexa-compatible audio**: Amazon Echo speakers cannot play a normal `media_player.play_media` stream ("Direct music streaming isn't supported"). Echo playback **requires** the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration (HACS, then set up in Home Assistant) **and** a public Home Assistant HTTPS URL (Home Assistant Cloud / Nabu Casa is fine). When the configured speaker is an Alexa Media Player, Granboard now converts the chosen clip with Home Assistant's ffmpeg to a 48 kbps, 24 kHz mono MP3 no longer than 240 seconds, caches it under `/config/www/granboard/sounds/.alexa_cache/`, and plays it with `notify.alexa_media` as SSML `<audio src="..."/>` (`type: tts`) using that public HTTPS URL from `get_url(..., prefer_external=True)`. The 60 % volume cap still applies. The cache is skipped by Sound Theme discovery. If conversion or the public URL fails, the original file is played and a warning is logged.

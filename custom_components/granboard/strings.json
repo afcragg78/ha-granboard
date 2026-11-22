@@ -35,12 +35,16 @@
       "general": {
         "title": "General",
         "data": {
+          "preferred_bluetooth_adapter": "Preferred Bluetooth Adapter",
           "button_next_player": "Board Button Ends The Turn",
           "auto_next_player": "Next Dart After A Full Turn Starts The Next Player",
           "debounce_ms": "Repeat Hit Window (ms)",
           "led_effects": "Light The Board On Hits"
         },
-        "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off). Light The Board On Hits blinks the board's LED ring in the player's colour on every dart, plays award effects and a circular wipe when the turn changes, like the Granboard app."
+        "description": "While a game is running, the button on the board moves to the next player. The Repeat Hit Window ignores a hit identical to the last one if it arrives this soon after it (0 turns it off). Light The Board On Hits blinks the board's LED ring in the player's colour on every dart, plays award effects and a circular wipe when the turn changes, like the Granboard app. Preferred Bluetooth Adapter is Automatic by default, which leaves the radio choice to Home Assistant. Pick a specific adapter or proxy to always connect the board through that radio; if it cannot see the board, the connection fails with a clear error. The Granboard Connection switch and Release Board still disconnect immediately and stop all retries.",
+        "data_description": {
+          "preferred_bluetooth_adapter": "Automatic uses Home Assistant's usual scanner choice. Pick a USB dongle or Bluetooth proxy to pin the board to that radio."
+        }
       },
       "sounds": {
         "title": "Sounds",
