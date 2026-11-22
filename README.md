@@ -198,7 +198,7 @@ Full setup, a positions diagram and examples are in the [guide](docs/INSTALL.md#
 One sound plays per dart. Award sounds (winner, checkout, bust, ton 80, hat trick, white horse, three in a bed, high ton, ton 40, ton) win over the hit sound; Triple 20 falls back to Triple, then Any Hit. For theme folders the same chain is used at each layer (current theme, then `default`, then the Configure file).
 Every sound also fires `granboard_sound` (`sound`, `url`, `theme`), so a dashboard or browser_mod automation can play it on a tablet instead of a speaker.
 
-**Amazon Echo / Alexa Media Player:** those speakers cannot stream a regular MP3. When the configured speaker is an Alexa device, Granboard converts the clip (48 kbps, 24 kHz mono MP3, max 240 s) with ffmpeg, caches it, and plays it as Alexa SSML over your public HTTPS address (Home Assistant Cloud / Nabu Casa). Configure > Sounds has **Alexa-Compatible Audio** to force this for other speakers. The original file is used if conversion fails.
+**Amazon Echo / Alexa Media Player:** those speakers cannot stream a regular MP3. Playback on an Echo **requires** the [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration (install from HACS, then set it up in Home Assistant) **and** a public Home Assistant HTTPS URL (Home Assistant Cloud / Nabu Casa is fine). With those in place, when the configured speaker is an Alexa Media Player device, Granboard converts the clip (48 kbps, 24 kHz mono MP3, max 240 s) with ffmpeg, caches it, and plays it as Alexa SSML over that public HTTPS address. Configure > Sounds has **Alexa-Compatible Audio** to force this conversion for other speakers. The original file is used if conversion fails.
 
 ## Protocol
 

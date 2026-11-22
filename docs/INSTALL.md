@@ -266,7 +266,12 @@ automation:
 
 Amazon Echo speakers cannot play a normal `media_player.play_media` URL ("Direct music streaming isn't supported"). They need an MP3 that Amazon's servers can fetch over public HTTPS, encoded at 48 kbps, 16000 / 22050 / 24000 Hz, and no longer than 240 seconds.
 
-When the speaker in Configure > Sounds is an **Alexa Media Player** device, Granboard does this for you:
+**Requirements.** Echo playback **requires** both of the following. Granboard does not talk to Alexa on its own.
+
+1. The [Alexa Media Player](https://github.com/alandtse/alexa_media_player) integration, installed from HACS (`alandtse/alexa_media_player`) and set up in Home Assistant, so your Echo devices appear as `media_player` entities and `notify.alexa_media` is available.
+2. A public Home Assistant **HTTPS** URL (Home Assistant Cloud / Nabu Casa is fine). Amazon must be able to fetch the clip; an internal-only address will not work.
+
+When those are in place and the speaker in Configure > Sounds is an **Alexa Media Player** device, Granboard does this for you:
 
 1. It converts the chosen clip with Home Assistant's ffmpeg (included on Home Assistant OS) to a 48 kbps, 24 kHz mono MP3, trimmed to 240 seconds.
 2. The converted file is cached in `/config/www/granboard/sounds/.alexa_cache/` (this hidden folder is not treated as a Sound Theme).
