@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.9
+
+- **Sound Themes**: drop a folder of clips per trigger and switch packs from the new **Sound Theme** select (`select.<board>_sound_theme`). Put files in `/config/www/granboard/sounds/<theme>/<trigger>/` as `.mp3`, `.wav` or `.ogg`, for example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. The dropdown lists **Off** plus every theme folder it finds. It rescans when Home Assistant starts, when the dropdown is opened, and on each play, so a new folder or file is picked up without a restart (except the first time you create `/config/www`). The chosen theme is restored after a restart.
+- On each dart the integration picks a random clip from the current theme's trigger folder. If that folder is empty it tries `default/<trigger>/`, then the existing single-file box in Configure > Sounds, then the next key in the usual chain (for example Triple 20 → Triple → Any Hit) at each of those layers. **Off** uses only the Configure file boxes, as before.
+- Award priority, "one sound per dart" and the 60 % volume cap are unchanged. The `granboard_sound` event now includes `theme` as well as `sound` and `url`.
+
+
 ## 0.2.8
 
 - Rainbow Sweep (and `granboard.led` with `effect: rainbow`) now loops. The board only plays one up-and-down pass (about 2 seconds), so the integration re-sends the native `0x10` command every 2 seconds while the effect is active. The repeat stops immediately if you change the effect, turn the ring off, send `clear` or another LED command, unload the integration, or the board disconnects, and it comes back on reconnect if it was still on. A tick is skipped if a write is already in progress, so commands never stack.

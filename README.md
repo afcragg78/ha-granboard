@@ -85,6 +85,7 @@ To update: HACS > Granboard > **Update**, then restart Home Assistant.
 | Sensor **Signal Strength** | RSSI from the last advertisement (diagnostic). The board stops advertising while connected, so this updates only while it is not. |
 | Light **LED Ring** | The board's LED ring as a light between games (see LED Ring Light below). |
 | Select **Ring Palette**, Numbers **Ring Speed** / **Ring Intensity**, Text **Ring Color 2** | LED Ring effect settings (configuration). |
+| Select **Sound Theme** | Sound pack folder under `/config/www/granboard/sounds/<theme>/`, or Off to use only the Configure file boxes. The choice is restored after a restart. |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
 
 ## Events
@@ -94,7 +95,7 @@ To update: HACS > Granboard > **Update**, then restart Home Assistant.
 - `granboard_award`: `type` is one of `bullseye` (any bull; check `segment` for `SB` / `DB`), `ton` (100–139), `ton_40` (140–150), `high_ton` (151–179), `ton_80` (180), `hat_trick` (three bulls), `three_in_a_bed` (three darts in the same bed), `white_horse` (three different trebles on Cricket numbers), `bust`, `winner`. Also `player`, `player_index`, and `score` / `segment` where they apply. Ton awards count in x01 and Count-Up only.
 
 - `granboard_turn`: `player`, `player_index`, `color`, `round` when the turn changes.
-- `granboard_sound`: `sound` (the Configure field, e.g. `ton_80`) and `url` whenever a sound plays.
+- `granboard_sound`: `sound` (the trigger, e.g. `ton_80`), `url` and `theme` (the Sound Theme, e.g. `funny` or `Off`) whenever a sound plays.
 - `granboard_hit` and `granboard_award` also carry `player` and `color` (the thrower's `#rrggbb`) during a game.
 
 Use these to drive WLED or anything else from an automation. See [WLED And Room Lights Automations](docs/INSTALL.md#13-wled-and-room-lights-automations) for ready-to-paste examples.
@@ -186,15 +187,16 @@ Full setup, a positions diagram and examples are in the [guide](docs/INSTALL.md#
 
 ## Sounds
 
-1. Make the folder `/config/www/granboard/sounds/` (File editor, Samba or Studio Code Server) and put your MP3s in it, for example `ton80.mp3`.
-   Restart Home Assistant once after creating the `www` folder for the first time.
-2. Open **Settings > Devices & Services > Granboard > Configure > Sounds**.
-3. Pick the **Speaker** (any media player) and enter a file for each moment you want, as `/local/granboard/sounds/ton80.mp3`.
-   A `media-source://media_source/local/...` path from the Media panel works too. Leave a box empty for no sound.
-4. Optional: **Sound Volumes** sets a volume per sound (0-60 %). Empty leaves the speaker's volume alone. The integration never sets a volume above 60 %.
+**Sound Themes (recommended for several clips):** create `/config/www/granboard/sounds/<theme>/<trigger>/` (File editor, Samba or Studio Code Server) and drop in `.mp3`, `.wav` or `.ogg` files, for example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. Trigger folder names are `hit`, `single`, `double`, `triple`, `triple_20`, `outer_bull`, `inner_bull`, `miss`, `ton`, `ton_40`, `high_ton`, `ton_80`, `hat_trick`, `three_in_a_bed`, `white_horse`, `bust`, `checkout`, `winner`, `next_player` and `game_start`. Pick the pack on the **Sound Theme** select (Off, plus every theme folder). A `default` theme is used when the current pack has no clip for that trigger. Restart Home Assistant once after creating the `www` folder for the first time; after that, new folders and files are picked up on the next dart or when you open the dropdown.
 
-One sound plays per dart. Award sounds (winner, checkout, bust, ton 80, hat trick, white horse, three in a bed, high ton, ton 40, ton) win over the hit sound; Triple 20 falls back to Triple, then Any Hit.
-Every sound also fires `granboard_sound` (`sound`, `url`), so a dashboard or browser_mod automation can play it on a tablet instead of a speaker.
+**Single files (still supported):** put a file in `/config/www/granboard/sounds/` and enter it in **Configure > Sounds** as `/local/granboard/sounds/ton80.mp3`, or use a `media-source://media_source/local/...` path from Media. These boxes are the fallback when a theme folder is empty. Leave a box empty for no sound at that layer.
+
+1. Open **Settings > Devices & Services > Granboard > Configure > Sounds**.
+2. Pick the **Speaker** (any media player). If you leave it empty, sounds still fire the `granboard_sound` event.
+3. Optional: **Sound Volumes** sets a volume per sound (0-60 %). Empty leaves the speaker's volume alone. The integration never sets a volume above 60 %.
+
+One sound plays per dart. Award sounds (winner, checkout, bust, ton 80, hat trick, white horse, three in a bed, high ton, ton 40, ton) win over the hit sound; Triple 20 falls back to Triple, then Any Hit. For theme folders the same chain is used at each layer (current theme, then `default`, then the Configure file).
+Every sound also fires `granboard_sound` (`sound`, `url`, `theme`), so a dashboard or browser_mod automation can play it on a tablet instead of a speaker.
 
 ## Protocol
 

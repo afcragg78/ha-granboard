@@ -9,6 +9,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -59,7 +60,13 @@ from .const import (
 )
 from . import led
 from .colors import to_rgb
-from .sounds import pick_sound, volume_level
+from .sounds import (
+    THEME_OFF,
+    pick_sound_clip,
+    theme_options,
+    volume_level,
+    SOUNDS_WWW_SUBPATH,
+)
 from .game import Game
 from .protocol import Button, FrameBuffer, Hit, decode_frame
 from .reconnect import DuplicateFilter, WarmupGate, backoff_seconds
@@ -122,6 +129,8 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._attempt = 0
         self._stopping = False
         self._shut_down = False
+        self.sound_theme = THEME_OFF
+        self._theme_listeners: list[Callable[[], None]] = []
 
     # ------------------------------------------------------------ lifecycle
     @property
@@ -156,6 +165,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             BluetoothCallbackMatcher(address=self.address),
             BluetoothScanningMode.PASSIVE,
         )
+        await self.hass.async_add_executor_job(self.list_sound_themes)
         if self.enabled:
             self._start_loop()
 
@@ -450,26 +460,69 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self.led_play([(led.clear_command(), led.MIN_GAP_MS)])
 
     # ------------------------------------------------------------ sounds
+    # ------------------------------------------------------------ sound themes
+    @property
+    def sounds_root(self) -> Path:
+        return Path(self.hass.config.path(SOUNDS_WWW_SUBPATH))
+
+    def list_sound_themes(self) -> list[str]:
+        """Folder names under /config/www/granboard/sounds/. Safe to call from an executor."""
+        return theme_options(self.sounds_root, self.sound_theme)
+
+    def set_sound_theme(self, theme: str) -> None:
+        theme = theme or THEME_OFF
+        if self.sound_theme == theme:
+            return
+        self.sound_theme = theme
+        for listener in list(self._theme_listeners):
+            try:
+                listener()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Granboard %s sound theme listener failed", self.address)
+
+    def async_on_sound_theme(self, listener: Callable[[], None]) -> Callable[[], None]:
+        self._theme_listeners.append(listener)
+
+        def _remove() -> None:
+            with contextlib.suppress(ValueError):
+                self._theme_listeners.remove(listener)
+
+        return _remove
+
+    def _pick_sound_clip(
+        self, hit: dict[str, Any] | None, awards: list[dict[str, Any]], event: str | None
+    ) -> tuple[str, str, str | None] | None:
+        sounds: dict[str, str] = self.entry.options.get(CONF_SOUNDS) or {}
+        return pick_sound_clip(self.sounds_root, self.sound_theme, sounds, hit=hit, awards=awards, event=event)
+
     @callback
     def play_sound(self, *, hit: dict[str, Any] | None = None, awards: list[dict[str, Any]] | None = None, event: str | None = None) -> None:
-        """Play the configured file for this moment, if any. One sound at a time."""
+        """Play one clip for this moment, if any. One sound at a time."""
         sounds: dict[str, str] = self.entry.options.get(CONF_SOUNDS) or {}
-        if not sounds:
-            return
         awards = awards or []
-        # An award beats the turn sound; an explicit event (game start / next player) beats a plain hit.
-        key = pick_sound(sounds, hit=hit, awards=awards, event=event)
-        if key is None:
+        has_files = self.sound_theme != THEME_OFF or any(str(value or "").strip() for value in sounds.values())
+        if not has_files:
             return
-        url = sounds[key].strip()
-        self.hass.bus.async_fire(EVENT_SOUND, self._event_base({"sound": key, "url": url}))
+        # An award beats the turn sound; an explicit event (game start / next player) beats a plain hit.
+        self.entry.async_create_background_task(
+            self.hass, self._async_pick_and_play(hit, awards, event), name=f"{DOMAIN}-{self.address}-sound"
+        )
+
+    async def _async_pick_and_play(
+        self, hit: dict[str, Any] | None, awards: list[dict[str, Any]], event: str | None
+    ) -> None:
+        picked = await self.hass.async_add_executor_job(self._pick_sound_clip, hit, awards, event)
+        if picked is None:
+            return
+        key, url, _folder = picked
+        self.hass.bus.async_fire(
+            EVENT_SOUND, self._event_base({"sound": key, "url": url, "theme": self.sound_theme})
+        )
         player = self.entry.options.get(CONF_SOUND_PLAYER)
         if not player:
             return  # dashboard / browser_mod can still play it from the granboard_sound event
         volume = volume_level((self.entry.options.get(CONF_SOUND_VOLUMES) or {}).get(key))
-        self.entry.async_create_background_task(
-            self.hass, self._async_play(player, url, volume), name=f"{DOMAIN}-{self.address}-sound"
-        )
+        await self._async_play(player, url, volume)
 
     async def _async_play(self, player: str, url: str, volume: float | None) -> None:
         try:

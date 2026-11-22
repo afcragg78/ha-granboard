@@ -44,7 +44,7 @@
       },
       "sounds": {
         "title": "Sounds",
-        "description": "Pick the speaker, then a sound for each moment. Put MP3s in /config/www/granboard/sounds/ and enter them as /local/granboard/sounds/name.mp3, or use a media-source:// path from Media. Leave a box empty for no sound. One sound plays per dart: an award sound wins over the hit sound, and Any Hit is used when the specific one is empty.",
+        "description": "Pick the speaker, then a sound for each moment, or use Sound Theme folders (/config/www/granboard/sounds/<theme>/<trigger>/*.mp3). Put single files in /config/www/granboard/sounds/ and enter them as /local/granboard/sounds/name.mp3, or use a media-source:// path from Media. Leave a box empty for no sound. One sound plays per dart: an award sound wins over the hit sound, and Any Hit is used when the specific one is empty.",
         "data": {
           "sound_player": "Speaker",
           "hit": "Any Hit (Fallback)",
@@ -204,6 +204,9 @@
     "select": {
       "ring_palette": {
         "name": "Ring Palette"
+      },
+      "sound_theme": {
+        "name": "Sound Theme"
       }
     },
     "number": {

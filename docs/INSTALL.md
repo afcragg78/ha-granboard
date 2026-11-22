@@ -143,11 +143,12 @@ Find them on the device page: **Settings > Devices & Services > Granboard > (you
 | Sensor **Signal Strength** | `sensor.<board>_signal_strength` | Diagnostic: RSSI from the board's last advertisement. It only updates while the board is *not* connected, because the board stops advertising once it's connected. |
 | Light **LED Ring** | `light.<board>_led_ring` | The board's LED ring as a light between games. See [section 12](#12-led-ring-light-between-games). |
 | Select **Ring Palette** | `select.<board>_ring_palette` | Palette for LED Ring effects (configuration). |
+| Select **Sound Theme** | `select.<board>_sound_theme` | Sound pack folder under `/config/www/granboard/sounds/<theme>/`, or Off to use only the Configure file boxes. Restored after a restart. |
 | Number **Ring Speed** | `number.<board>_ring_speed` | 0 to 255, default 128 (configuration). |
 | Number **Ring Intensity** | `number.<board>_ring_intensity` | 0 to 255, default 128 (configuration). |
 | Text **Ring Color 2** | `text.<board>_ring_color_2` | Second color as `#RRGGBB`, empty by default (configuration). |
 
-**Events** (for automations): `granboard_hit`, `granboard_award`, `granboard_turn`, `granboard_button` and `granboard_sound`. See [section 14](#14-wled-and-room-lights-automations) and the README's Events list.
+**Events** (for automations): `granboard_hit`, `granboard_award`, `granboard_turn`, `granboard_button` and `granboard_sound` (includes `theme` and `url`). See [section 14](#14-wled-and-room-lights-automations) and the README's Events list.
 
 ## 7. Configure Options
 
@@ -172,7 +173,22 @@ See [section 13](#13-wled-sections-lights-around-the-board).
 
 ## 8. Custom Sounds
 
-You can play your own MP3 for every hit type, award and game moment on any Home Assistant speaker.
+You can play your own MP3, WAV or OGG clips for every hit type, award and game moment on any Home Assistant speaker. You can still enter one file per moment in Configure, or use **Sound Themes** to keep several clips per trigger and switch packs from a dropdown.
+
+### Sound Themes (Several Clips Per Trigger)
+
+This is the easiest way to build a funny soundboard, or several packs you can switch between.
+
+1. With the **File editor**, **Samba share** or **Studio Code Server** add-on, create a folder for each pack and trigger:
+   ```
+   /config/www/granboard/sounds/<theme>/<trigger>/
+   ```
+   For example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. Use `.mp3`, `.wav` or `.ogg`. Trigger folder names are: `hit`, `single`, `double`, `triple`, `triple_20`, `outer_bull`, `inner_bull`, `miss`, `ton`, `ton_40`, `high_ton`, `ton_80`, `hat_trick`, `three_in_a_bed`, `white_horse`, `bust`, `checkout`, `winner`, `next_player`, `game_start`.
+2. **If you just created `/config/www` for the first time, restart Home Assistant once** so it starts serving that folder. After that, new theme folders and files are picked up when you open the Sound Theme dropdown or on the next dart — no restart needed.
+3. On the Granboard device page (or your darts dashboard), set **Sound Theme** to the folder name (`funny`, `default`, and so on). **Off** uses only the single-file boxes in Configure > Sounds, the same as before. The chosen theme is restored after a Home Assistant restart.
+4. Each time a sound plays, one clip is picked at random from that theme's trigger folder. If the folder is empty, it tries `default/<trigger>/`, then the Configure file for that trigger, then the next key in the usual chain (for example Triple 20 → Triple → Any Hit), at each of those layers. You do not have to fill every trigger in every theme.
+
+Files in `www` can be read by anyone who can reach your Home Assistant without logging in. Don't put private files there.
 
 ### Step 1: Put Your Sound Files In Home Assistant
 
@@ -229,7 +245,7 @@ Go to **Configure > Sounds**:
 
 **Configure > Sound Volumes** has one box per sound, from 0 to 60 %. The integration sets the speaker to that volume just before the sound plays. Leave a box empty to leave the speaker's volume alone. **The integration never sets a volume above 60 %.** It doesn't put the old volume back afterwards, so if you use this with a speaker you also play music on, consider using it only for a dedicated speaker.
 
-**Tip:** every sound also fires a `granboard_sound` event with `sound` (the field name, such as `ton_80`) and `url`. With [browser_mod](https://github.com/thomasloven/hass-browser_mod) you can play it on the dashboard tablet instead of a speaker:
+**Tip:** every sound also fires a `granboard_sound` event with `sound` (the field name, such as `ton_80`), `url` and `theme` (the Sound Theme, such as `funny` or `Off`). With [browser_mod](https://github.com/thomasloven/hass-browser_mod) you can play it on the dashboard tablet instead of a speaker:
 
 ```yaml
 automation:
