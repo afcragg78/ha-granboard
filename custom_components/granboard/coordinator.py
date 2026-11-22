@@ -8,7 +8,7 @@ import logging
 from collections import deque
 from dataclasses import dataclass, field
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -29,6 +29,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -107,7 +108,9 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self.ring_settings: dict[str, Any] = {"palette": "Default", "speed": 128, "intensity": 128, "color2": ""}
         self._ring_listeners: list[Callable[[], None]] = []
         self.wled = WledSections(hass, entry)
-        self.led_hold = False  # a granboard.led raw test frame is on show; the LED Ring light waits
+        self.led_hold = False  # a granboard.led raw or rainbow effect is on show; the LED Ring light waits
+        self._rainbow_active = False  # keep re-sending the native 0x10 rainbow until cancelled
+        self._rainbow_unsub: Callable[[], None] | None = None
         self._write_response = False
         self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None
@@ -181,6 +184,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if self._shut_down:
             return
         self._shut_down = True
+        self.stop_rainbow_sweep()
         if self._ble_unsub is not None:
             self._ble_unsub()
             self._ble_unsub = None
@@ -317,6 +321,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if self.data.connected != connected:
             self.data.connected = connected
             self.hass.loop.call_soon_threadsafe(self.async_update_listeners)
+            if connected:
+                self._resume_rainbow_sweep()
+            else:
+                self._pause_rainbow_sweep()
 
     # ------------------------------------------------------------ frames
     def _on_notify(self, _char: Any, data: bytearray) -> None:
@@ -534,11 +542,59 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         await self._led_idle.wait()
 
     @callback
-    def led_play(self, steps: list[led.Step], replace: bool = True, ambient: bool = False) -> None:
+    def start_rainbow_sweep(self, *, hold: bool = False) -> None:
+        """Send the native rainbow and re-send it every 2s until it is stopped."""
+        self._rainbow_active = True
+        if hold:
+            self.led_hold = True
+        self._pause_rainbow_sweep()
+        if self.can_write:
+            self.led_play([(led.rainbow_command(), led.MIN_GAP_MS)], ambient=not hold, keep_rainbow=True)
+        self._arm_rainbow_sweep()
+
+    @callback
+    def stop_rainbow_sweep(self) -> None:
+        """Cancel the repeating rainbow immediately."""
+        self._rainbow_active = False
+        self._pause_rainbow_sweep()
+
+    def _pause_rainbow_sweep(self) -> None:
+        """Stop the interval without forgetting that the effect is still active."""
+        if self._rainbow_unsub is not None:
+            self._rainbow_unsub()
+            self._rainbow_unsub = None
+
+    def _arm_rainbow_sweep(self) -> None:
+        if self._rainbow_unsub is not None or not self._rainbow_active:
+            return
+        self._rainbow_unsub = async_track_time_interval(
+            self.hass, self._rainbow_tick, timedelta(seconds=led.REPEAT_RAINBOW_SWEEP_S)
+        )
+
+    def _resume_rainbow_sweep(self) -> None:
+        """Start sending again after a reconnect, if the effect is still active."""
+        if not self._rainbow_active or not self.can_write:
+            return
+        if self._led_idle.is_set():
+            self.led_play([(led.rainbow_command(), led.MIN_GAP_MS)], ambient=True, keep_rainbow=True)
+        self._arm_rainbow_sweep()
+
+    @callback
+    def _rainbow_tick(self, _now: datetime | None = None) -> None:
+        if not self._rainbow_active or not self.can_write:
+            return
+        if not self._led_idle.is_set():
+            return  # a write is already in progress; skip this tick so commands don't stack
+        self.led_play([(led.rainbow_command(), led.MIN_GAP_MS)], ambient=True, keep_rainbow=True)
+
+    @callback
+    def led_play(self, steps: list[led.Step], replace: bool = True, ambient: bool = False, keep_rainbow: bool = False) -> None:
         """Queue LED commands. A new effect replaces what is still waiting, so the
         newest dart always lights first and nothing piles up."""
         if not steps or not self.can_write:
             return
+        if not ambient and not keep_rainbow:
+            self.stop_rainbow_sweep()
         if replace:
             self._led_queue.clear()
         room = LED_QUEUE_MAX - len(self._led_queue)

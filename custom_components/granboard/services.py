@@ -153,11 +153,14 @@ def async_setup_services(hass: HomeAssistant) -> None:
         game = coordinator.game
         rgb = to_rgb(game.color_of(game.current if game.status == "playing" else None))
         steps = led_steps(dict(call.data), rgb)
-        # A raw test frame stays on show: the LED Ring light pauses until a clear, another
-        # board light action, or the light is turned on again.
-        held = call.data["effect"] in ("raw", "rainbow")  # both keep running on the board until cleared
+        # A raw test frame or looping rainbow stays on show: the LED Ring light pauses
+        # until a clear, another board light action, or the light is turned on again.
+        held = call.data["effect"] in ("raw", "rainbow")
         coordinator.led_hold = held and any(steps[0][0]) if steps else False
-        coordinator.led_play(steps)
+        if call.data["effect"] == "rainbow":
+            coordinator.start_rainbow_sweep(hold=True)
+        else:
+            coordinator.led_play(steps)
 
     handlers: dict[str, tuple[Any, vol.Schema]] = {
         "new_game": (new_game, NEW_GAME_SCHEMA),

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Rainbow Sweep (and `granboard.led` with `effect: rainbow`) now loops. The board only plays one up-and-down pass (about 2 seconds), so the integration re-sends the native `0x10` command every 2 seconds while the effect is active. The repeat stops immediately if you change the effect, turn the ring off, send `clear` or another LED command, unload the integration, or the board disconnects, and it comes back on reconnect if it was still on. A tick is skipped if a write is already in progress, so commands never stack.
+
 ## 0.2.7
 
 - New LED Ring effect **Rainbow Sweep**: the board's own firmware rainbow, moving up and down across the ring. It's a single command (`0x10`, now confirmed on a real Granboard 3s; the other bytes are ignored), and the board animates it smoothly by itself until something else is shown. It's only sent again when the light resumes after a game or reconnect. Color, brightness, Ring Palette, Ring Speed, Ring Intensity and Ring Color 2 don't apply to it.

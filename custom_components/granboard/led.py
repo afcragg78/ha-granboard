@@ -14,8 +14,12 @@ The board can drop commands sent back to back; space them ~60 ms apart.
 
 0x10 rainbow sweep: confirmed on a real Granboard 3s (Nov 2026, from the community
 "rainbow spin" lead). The board runs its own firmware rainbow that moves up and
-down across the ring and keeps running until the next command or a clear. All
-other bytes are ignored (colour, position and speed made no difference).
+down across the ring for one pass (about 2 seconds), then stops. All other
+bytes are ignored (colour, position and speed made no difference). While
+Rainbow Sweep or granboard.led effect: rainbow is active, the integration
+re-sends this command every REPEAT_RAINBOW_SWEEP_S seconds so the animation
+loops until the effect is changed, the ring is turned off or cleared, or
+another LED command is sent.
 """
 
 from __future__ import annotations
@@ -26,6 +30,8 @@ RGB = tuple[int, int, int]
 Step = tuple[bytes, int]  # command, milliseconds to wait after it
 
 MIN_GAP_MS = 60
+# The native 0x10 rainbow plays one up / down pass, then stops. Re-send this often to loop it.
+REPEAT_RAINBOW_SWEEP_S = 2.0
 
 HIT_SINGLE, HIT_DOUBLE, HIT_TRIPLE = 0x01, 0x02, 0x03
 WAVE, LIGHT_RING, BLINK = 0x11, 0x14, 0x17
@@ -127,7 +133,7 @@ def numbers_command(numbers: Iterable[int], palette: int = PALETTE_ORANGE) -> by
 
 
 def rainbow_command() -> bytes:
-    """The board's own rainbow sweep, running until the next command. One write."""
+    """The board's own rainbow sweep (one up / down pass, about 2 seconds)."""
     cmd = bytearray(16)
     cmd[0] = RAINBOW_SWEEP
     return bytes(cmd)

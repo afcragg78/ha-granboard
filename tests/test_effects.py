@@ -98,9 +98,12 @@ def test_circular_rainbow_is_a_rotating_rainbow_wave():
     assert E.CIRCULAR_RAINBOW in E.EFFECTS and E.CIRCULAR_RAINBOW not in E.HOLD_EFFECTS
 
 
-def test_rainbow_sweep_is_one_native_write():
-    steps = list(E.frames(E.RAINBOW_SWEEP, E.RingOptions(color=(1, 2, 3), brightness=10, palette="Ocean", speed=255)))
-    assert steps == [(led.rainbow_command(), led.AMBIENT_MIN_GAP_MS)]
+def test_rainbow_sweep_repeats_the_native_command():
+    steps = _take(E.RAINBOW_SWEEP, 3, color=(1, 2, 3), brightness=10, palette="Ocean", speed=255)
+    gap = round(led.REPEAT_RAINBOW_SWEEP_S * 1000)
+    assert led.REPEAT_RAINBOW_SWEEP_S == 2.0 and gap == 2000
+    assert steps == [(led.rainbow_command(), gap)] * 3
     assert led.rainbow_command() == bytes([0x10]) + bytes(15)
     assert E.RAINBOW_SWEEP in E.NATIVE_EFFECTS and E.RAINBOW_SWEEP in E.SETTINGS_FREE_EFFECTS
+    assert E.RAINBOW_SWEEP not in E.HOLD_EFFECTS  # the same 0x10 command must be re-sent
     assert E.EFFECTS.index(E.RAINBOW_SWEEP) == E.EFFECTS.index(E.CIRCULAR_RAINBOW) + 1

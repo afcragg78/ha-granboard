@@ -169,6 +169,9 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
 
     @callback
     def _cancel(self) -> None:
+        # A service rainbow (led_hold) keeps looping until another LED command.
+        if not self.coordinator.led_hold:
+            self.coordinator.stop_rainbow_sweep()
         task, self._task = self._task, None
         if task is not None and not task.done():
             task.cancel()
@@ -191,6 +194,12 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
             await self.coordinator.async_led_idle()
             if delay:
                 await asyncio.sleep(delay)
+            if not self._should_run():
+                return
+            if effect == effects.RAINBOW_SWEEP:
+                # The board plays one ~2 s pass; the coordinator re-sends 0x10 until cancelled.
+                self.coordinator.start_rainbow_sweep()
+                return
             for cmd, wait_ms in steps:
                 if not self._should_run():
                     return

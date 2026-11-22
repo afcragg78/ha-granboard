@@ -358,7 +358,7 @@ Plays a one-off effect on the board's LED ring (only while connected). `color` d
 | `clear` | Turns the ring off |
 | `sweep` | Each number in turn from `color` to `color2` (default green), then a flash |
 | `wipe` | The between-turns circular wipe in `color` |
-| `rainbow` | The board's own rainbow sweep (up and down). It keeps running until `clear` or another effect. |
+| `rainbow` | The board's own rainbow sweep (up and down). One pass takes about 2 seconds; it is re-sent so it keeps looping until `clear` or another effect. |
 | `award` | Preview an award effect: `award` such as `ton_80`, `hat_trick`, `bust`, `winner`, `checkout` (with `segment`) |
 
 ```yaml
@@ -406,7 +406,7 @@ Commands are queued at least 60 ms apart, a new dart replaces effects still wait
 | **Palette Steps** | Whole ring steps through palette colors, a few seconds each. Intensity = how many colors. |
 | **Chase** | One number at a time goes around the ring. |
 | **Rainbow Chase** | Chase in rainbow colors (or the palette): one number lit at a time. |
-| **Rainbow Sweep** | The board's own built-in rainbow, moving up and down across the ring. Home Assistant sends one command and the board animates it smoothly by itself. Color, brightness, Ring Palette, Ring Speed and Ring Intensity don't apply. |
+| **Rainbow Sweep** | The board's own built-in rainbow, moving up and down across the ring. One pass takes about 2 seconds; Home Assistant re-sends the command so it keeps looping until you change the effect or turn the ring off. Color, brightness, Ring Palette, Ring Speed and Ring Intensity don't apply. |
 | **Circular Rainbow** | The whole ring animates with the board's own wave while its two colors keep moving round the rainbow (or the palette), about one new wave a second. Intensity = how far apart the two colors are. |
 | **Bounce** | One number goes round and back (scanner). |
 | **Circular Wipe** | Numbers light one by one around the ring, then it clears. |

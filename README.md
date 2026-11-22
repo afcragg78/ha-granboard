@@ -108,7 +108,7 @@ Use these to drive WLED or anything else from an automation. See [WLED And Room 
 | `granboard.next_player` | Ends the turn, even with darts left. |
 | `granboard.end_game` | **Clear Game**: clears the current or finished game back to a blank board. Undo brings it back. |
 | `granboard.throw` | `segment` such as `T20`, `D16`, `SB`, `DB`, `MISS`. Scores a dart without the board, for testing a dashboard. |
-| `granboard.led` | One-off board light effect: `segment`, `blink`, `wave`, `ring`, `numbers`, `clear`, `sweep`, `wipe`, `award`, `rainbow` (the board's own rainbow sweep, runs until `clear`), or the advanced test effect `raw` (see the [guide](docs/INSTALL.md#your-own-board-light-effects-granboardled)). |
+| `granboard.led` | One-off board light effect: `segment`, `blink`, `wave`, `ring`, `numbers`, `clear`, `sweep`, `wipe`, `award`, `rainbow` (the board's own rainbow sweep, loops every 2 seconds until `clear` or another effect), or the advanced test effect `raw` (see the [guide](docs/INSTALL.md#your-own-board-light-effects-granboardled)). |
 
 All take an optional `device_id` when you have more than one board.
 
@@ -151,7 +151,7 @@ The LED command format comes from the community reference [keenanlk/granboard-bl
 | Color Cycle | Whole ring glides along the palette (rainbow by default). |
 | Palette Steps | Whole ring steps through the palette's colours, a few seconds each (Intensity = how many colours). |
 | Chase / Rainbow Chase / Bounce | One number at a time goes round (or back and forth) in palette colours. |
-| Rainbow Sweep | The board's own built-in rainbow, moving up and down across the ring. One command, and the board animates it by itself until something else is shown. Color, brightness, palette, speed and intensity don't apply. |
+| Rainbow Sweep | The board's own built-in rainbow, moving up and down across the ring. One pass takes about 2 seconds; Home Assistant re-sends it so it keeps looping until you change the effect or turn the ring off. Color, brightness, palette, speed and intensity don't apply. |
 | Circular Rainbow | The board's own wave animation keeps running round the whole ring while its two colours travel through the rainbow (or the palette). Intensity = how far apart the two colours are. |
 | Circular Wipe | Numbers light one by one round the ring, then it clears. |
 | Twinkle | Random numbers blink in palette colours (Intensity = how many). |
