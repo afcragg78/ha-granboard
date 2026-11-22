@@ -107,6 +107,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self.ring_settings: dict[str, Any] = {"palette": "Default", "speed": 128, "intensity": 128, "color2": ""}
         self._ring_listeners: list[Callable[[], None]] = []
         self.wled = WledSections(hass, entry)
+        self.led_hold = False  # a granboard.led raw test frame is on show; the LED Ring light waits
         self._write_response = False
         self.led_writes = 0
         self._client: BleakClientWithServiceCache | None = None

@@ -272,3 +272,31 @@ def complement(color: RGB) -> RGB:
         return (0, 0, 0)
     r, g, b = colorsys.hsv_to_rgb((h + 0.5) % 1.0, s, v)
     return round(r * 255), round(g * 255), round(b * 255)
+
+
+# ------------------------------------------------------------ raw test frames
+# Advanced / test only: send one hand-made frame. Only known command bytes are
+# allowed, plus 0x10 (the community "rainbow spin" lead, unconfirmed).
+RAINBOW_SPIN = 0x10
+RAW_COMMANDS = frozenset({HIT_SINGLE, HIT_DOUBLE, HIT_TRIPLE, RAINBOW_SPIN, WAVE, LIGHT_RING, BLINK})
+
+
+def parse_raw(text: object) -> bytes:
+    """Hex string (spaces, colons or dashes allowed) -> a validated 16- or 20-byte frame.
+
+    16 bytes: byte 0 must be 0x01, 0x02, 0x03, 0x10, 0x11, 0x14 or 0x17.
+    20 bytes: the number command (each byte 0x00-0x07) or the all-zero clear.
+    """
+    cleaned = "".join(c for c in str(text or "") if c not in " :-_\t\n").lower().removeprefix("0x")
+    if not cleaned or len(cleaned) % 2 or any(c not in "0123456789abcdef" for c in cleaned):
+        raise ValueError("raw must be hex bytes, for example 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+    data = bytes.fromhex(cleaned)
+    if len(data) == 16:
+        if data[0] not in RAW_COMMANDS:
+            raise ValueError(f"raw command byte 0x{data[0]:02x} is not allowed (use 01, 02, 03, 10, 11, 14 or 17)")
+        return data
+    if len(data) == 20:
+        if any(b > 0x07 for b in data):
+            raise ValueError("a 20-byte raw frame must be the number command (bytes 00-07) or all zeros (clear)")
+        return data
+    raise ValueError(f"raw must be exactly 16 or 20 bytes, got {len(data)}")

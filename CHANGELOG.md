@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.6
+
+- Advanced / test: `granboard.led` has a new `raw` effect with a **Raw Frame (Advanced Test)** field, to send one hand-made frame to the board, for example to try the community "rainbow spin" lead (`10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`). It only accepts hex frames of exactly 16 bytes (first byte 01, 02, 03, 10, 11, 14 or 17) or 20 bytes (the number command or all zeros). It goes through the normal LED queue with the usual spacing, and only while the board is connected.
+- While a raw frame is shown, the LED Ring light pauses (attribute `paused_for_raw_frame: true`) so it doesn't draw over the test. `granboard.led` with `effect: clear` (or any other board light action, or turning the LED Ring on again) ends the test, and the light comes back.
+
 ## 0.2.5
 
 - New **WLED Sections** (Configure > WLED Sections): add the lights around your board with their position (Top (20) ... Top Left (9 / 12), or a Custom Angle) and an optional Spread. Each dart lights the nearest light(s) in the player's color, with a softer glow on the neighbours. The bulls pulse every light. Awards and turn changes sweep round the lights in board order with a smooth handoff: Ton / Ton 40 / High Ton once, Ton 80 / Hat Trick twice, Bust in red, Checkout / Winner as a two-lap rainbow, and a turn change in the next player's color.

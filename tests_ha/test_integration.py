@@ -662,3 +662,43 @@ async def test_wled_sections_use_wled_json_api(hass: HomeAssistant, aioclient_mo
     assert posts[-1]["seg"] == [{"id": 0, "col": [[1, 2, 3]], "fx": 9, "pal": 6}]  # no preset reload, name untouched
     assert "ps" not in posts[-1]
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_led_raw_test_frame_holds_ring_light_until_clear(hass: HomeAssistant) -> None:
+    import asyncio
+
+    import pytest as _pytest
+    from homeassistant.exceptions import ServiceValidationError
+
+    from custom_components.granboard import led
+
+    ring = "light.granboard_5547_led_ring"
+    real_sleep = asyncio.sleep
+
+    async def fast_sleep(*_args):
+        await real_sleep(0)
+
+    with patch(f"{CO}.asyncio.sleep", new=fast_sleep):
+        entry, coordinator, writes = await _ring_setup(hass)
+        await hass.services.async_call("light", "turn_on", {"entity_id": ring, "rgb_color": [0, 255, 0]}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        writes.clear()
+        await hass.services.async_call("granboard", "led", {"effect": "raw", "raw": "10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [bytes([0x10]) + bytes(15)]  # exactly one frame; the ring light does not come back over it
+        assert hass.states.get(ring).attributes["paused_for_raw_frame"] is True
+        for bad in ("20" + "00" * 15, "10 00", "08" + "00" * 19):
+            with _pytest.raises((ServiceValidationError, ValueError)):
+                await hass.services.async_call("granboard", "led", {"effect": "raw", "raw": bad}, blocking=True)
+        assert writes == [bytes([0x10]) + bytes(15)]
+        # Clear ends the test and the ring light returns.
+        await hass.services.async_call("granboard", "led", {"effect": "clear"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes[1:] == [bytes(20), led.ring_command((0, 255, 0))]
+        assert hass.states.get(ring).attributes["paused_for_raw_frame"] is False
+        # Released board: nothing is sent.
+        coordinator._client = None
+        coordinator._set_connected(False)
+        with _pytest.raises(ServiceValidationError):
+            await hass.services.async_call("granboard", "led", {"effect": "raw", "raw": "10" + "00" * 15}, blocking=True)
+    await hass.config_entries.async_unload(entry.entry_id)

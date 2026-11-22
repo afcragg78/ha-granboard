@@ -194,6 +194,9 @@
         "state_attributes": {
           "paused_for_game": {
             "name": "Paused For Game"
+          },
+          "paused_for_raw_frame": {
+            "name": "Paused For Raw Frame"
           }
         }
       }
@@ -329,7 +332,7 @@
         },
         "effect": {
           "name": "Effect",
-          "description": "segment, blink, wave, ring, numbers, clear, sweep, wipe or award."
+          "description": "segment, blink, wave, ring, numbers, clear, sweep, wipe, award, or raw (advanced test: send the Raw Frame below)."
         },
         "segment": {
           "name": "Segment",
@@ -358,6 +361,10 @@
         "award": {
           "name": "Award",
           "description": "Award effect to preview."
+        },
+        "raw": {
+          "name": "Raw Frame (Advanced Test)",
+          "description": "For testing only: one hand-made frame as hex, 16 bytes (first byte 01, 02, 03, 10, 11, 14 or 17) or 20 bytes (number command or all zeros). The LED Ring light pauses while it is shown; use effect clear afterwards."
         }
       }
     }

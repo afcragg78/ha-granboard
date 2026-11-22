@@ -34,7 +34,7 @@ NEW_GAME_SCHEMA = vol.Schema(
     }
 )
 
-LED_EFFECTS = ["segment", "blink", "wave", "ring", "numbers", "clear", "sweep", "wipe", "award"]
+LED_EFFECTS = ["segment", "blink", "wave", "ring", "numbers", "clear", "sweep", "wipe", "award", "raw"]
 LED_SCHEMA = vol.Schema(
     {
         **_BASE,
@@ -46,6 +46,7 @@ LED_SCHEMA = vol.Schema(
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=255)),
         vol.Optional("numbers"): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=1, max=20))]),
         vol.Optional("award"): cv.string,
+        vol.Optional("raw"): cv.string,
     }
 )
 
@@ -87,6 +88,8 @@ def led_steps(data: dict[str, Any], player_rgb: tuple[int, int, int]) -> list[le
             return led.sweep(color, color2 if data.get("color2") is not None else led.GREEN)
         if effect == "wipe":
             return led.turn_wipe(color)
+        if effect == "raw":
+            return [(led.parse_raw(data.get("raw")), led.MIN_GAP_MS)]
         if effect == "award":
             return led.plan_award({"type": data.get("award"), "segment": data.get("segment"), "score": 50}, color)
     except ValueError as err:
@@ -147,7 +150,11 @@ def async_setup_services(hass: HomeAssistant) -> None:
             raise ServiceValidationError("The Granboard is not connected, so its lights cannot be changed")
         game = coordinator.game
         rgb = to_rgb(game.color_of(game.current if game.status == "playing" else None))
-        coordinator.led_play(led_steps(dict(call.data), rgb))
+        steps = led_steps(dict(call.data), rgb)
+        # A raw test frame stays on show: the LED Ring light pauses until a clear, another
+        # board light action, or the light is turned on again.
+        coordinator.led_hold = call.data["effect"] == "raw" and any(steps[0][0]) if steps else False
+        coordinator.led_play(steps)
 
     handlers: dict[str, tuple[Any, vol.Schema]] = {
         "new_game": (new_game, NEW_GAME_SCHEMA),

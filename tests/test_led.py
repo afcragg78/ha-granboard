@@ -116,3 +116,17 @@ def test_ambient_scale_and_hue():
     assert L.hue(0) == (255, 0, 0) and L.hue(120) == (0, 255, 0) and L.hue(240) == (0, 0, 255)
     assert L.complement((255, 0, 0)) == (0, 255, 255)
     assert L.complement((255, 255, 255)) == (0, 0, 0)
+
+
+def test_parse_raw_frames():
+    import pytest as _pytest
+
+    spin = led.parse_raw("10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+    assert spin == bytes([0x10]) + bytes(15)
+    assert led.parse_raw("0x" + led.ring_command((255, 0, 0)).hex()) == led.ring_command((255, 0, 0))
+    assert led.parse_raw("00" * 20) == led.clear_command()
+    assert led.parse_raw(led.numbers_command([20]).hex()) == led.numbers_command([20])
+    assert led.parse_raw("11:FF:00:00:00:00:FF:00:00:00:10:00:05:00:00:00")[0] == led.WAVE
+    for bad in ("", "10", "1", "zz" * 16, "20" + "00" * 15, "10" * 17, "08" + "00" * 19, "00" * 21):
+        with _pytest.raises(ValueError):
+            led.parse_raw(bad)

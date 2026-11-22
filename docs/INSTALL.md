@@ -368,6 +368,15 @@ data:
   color2: "#0000ff"
 ```
 
+**Advanced / testing: `effect: raw`.** This sends one hand-made frame in **Raw Frame (Advanced Test)**, written as hex (spaces allowed). Only frames of exactly 16 bytes whose first byte is 01, 02, 03, 10, 11, 14 or 17, or 20-byte number / all-zero clear frames, are accepted. While it's shown, the LED Ring light pauses (`paused_for_raw_frame: true`). Send `effect: clear` afterwards to turn the ring off and let the light come back. Only use frames from a trusted reference.
+
+```yaml
+action: granboard.led
+data:
+  effect: raw
+  raw: "10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+```
+
 ## 11. Board Lights During Games
 
 With **Light The Board On Hits** on:

@@ -96,13 +96,18 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"paused_for_game": self.paused_for_game}
+        return {"paused_for_game": self.paused_for_game, "paused_for_raw_frame": self.coordinator.led_hold}
 
     def _current_context(self) -> tuple[bool, bool]:
         return self.coordinator.can_write, self.coordinator.game_playing
 
     def _should_run(self) -> bool:
-        return bool(self._attr_is_on) and self.coordinator.can_write and not self.coordinator.game_playing
+        return (
+            bool(self._attr_is_on)
+            and self.coordinator.can_write
+            and not self.coordinator.game_playing
+            and not self.coordinator.led_hold
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         if ATTR_RGB_COLOR in kwargs:
@@ -112,6 +117,7 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
         if kwargs.get(ATTR_EFFECT) in effects.EFFECTS:
             self._attr_effect = kwargs[ATTR_EFFECT]
         self._attr_is_on = True
+        self.coordinator.led_hold = False  # taking the light back ends a raw test frame
         self._restart()
         self.async_write_ha_state()
 
@@ -140,6 +146,8 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
         """A hit, turn, game or service effect was queued: step aside, come back after it."""
         if self._attr_is_on:
             self._restart(delay=RESUME_DELAY_S)
+        if self.hass is not None:
+            self.async_write_ha_state()  # paused_for_raw_frame may have changed
 
     @callback
     def _on_ring_settings(self) -> None:

@@ -68,7 +68,7 @@ led:
       example: segment
       selector:
         select:
-          options: [segment, blink, wave, ring, numbers, clear, sweep, wipe, award]
+          options: [segment, blink, wave, ring, numbers, clear, sweep, wipe, award, raw]
     segment:
       example: T20
       selector:
@@ -101,3 +101,8 @@ led:
       selector:
         select:
           options: [bullseye, bust, ton, ton_40, high_ton, ton_80, hat_trick, three_in_a_bed, white_horse, checkout, winner]
+    raw:
+      advanced: true
+      example: "10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+      selector:
+        text:
