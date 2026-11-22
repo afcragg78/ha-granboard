@@ -7,7 +7,7 @@ from custom_components.granboard import effects as E
 from custom_components.granboard import led
 from custom_components.granboard import palettes as P
 
-DOCUMENTED = {led.LIGHT_RING, led.BLINK, led.WAVE, led.HIT_SINGLE, led.HIT_DOUBLE, led.HIT_TRIPLE}
+DOCUMENTED = {led.LIGHT_RING, led.BLINK, led.WAVE, led.HIT_SINGLE, led.HIT_DOUBLE, led.HIT_TRIPLE, led.RAINBOW_SWEEP}
 
 
 def _take(effect, n=120, **kw):
@@ -96,3 +96,11 @@ def test_circular_rainbow_is_a_rotating_rainbow_wave():
     ocean = _take(E.CIRCULAR_RAINBOW, 3, palette="Ocean")
     assert ocean[0][0][1:4] == bytes(P.color_at("Ocean", 0, (255, 255, 255), (0, 0, 0)))
     assert E.CIRCULAR_RAINBOW in E.EFFECTS and E.CIRCULAR_RAINBOW not in E.HOLD_EFFECTS
+
+
+def test_rainbow_sweep_is_one_native_write():
+    steps = list(E.frames(E.RAINBOW_SWEEP, E.RingOptions(color=(1, 2, 3), brightness=10, palette="Ocean", speed=255)))
+    assert steps == [(led.rainbow_command(), led.AMBIENT_MIN_GAP_MS)]
+    assert led.rainbow_command() == bytes([0x10]) + bytes(15)
+    assert E.RAINBOW_SWEEP in E.NATIVE_EFFECTS and E.RAINBOW_SWEEP in E.SETTINGS_FREE_EFFECTS
+    assert E.EFFECTS.index(E.RAINBOW_SWEEP) == E.EFFECTS.index(E.CIRCULAR_RAINBOW) + 1

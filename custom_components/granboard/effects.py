@@ -2,7 +2,8 @@
 
 Every effect is a generator of (command, wait ms) steps built only from the
 documented ring commands in led.py: whole-ring colour (0x14), whole-ring blink
-(0x17), wave (0x11), one-number blink (0x01-0x03) and clear. Waits never go
+(0x17), wave (0x11), one-number blink (0x01-0x03), the native rainbow
+sweep (0x10, confirmed on a real board) and clear. Waits never go
 below led.AMBIENT_MIN_GAP_MS (250 ms, at most 4 writes a second).
 
 The board cannot hold several numbers lit in different colours with a
@@ -33,6 +34,7 @@ PALETTE_STEPS = "Palette Steps"
 CHASE = "Chase"
 RAINBOW_CHASE = "Rainbow Chase"
 CIRCULAR_RAINBOW = "Circular Rainbow"
+RAINBOW_SWEEP = "Rainbow Sweep"
 BOUNCE = "Bounce"
 WIPE = "Circular Wipe"
 TWINKLE = "Twinkle"
@@ -41,12 +43,16 @@ POLICE = "Police"
 LIGHTNING = "Lightning"
 
 EFFECTS: tuple[str, ...] = (
-    SOLID, BLINK, BREATHE, HEARTBEAT, WAVE, COLOR_CYCLE, PALETTE_STEPS, CHASE, RAINBOW_CHASE, CIRCULAR_RAINBOW,
+    SOLID, BLINK, BREATHE, HEARTBEAT, WAVE, COLOR_CYCLE, PALETTE_STEPS, CHASE, RAINBOW_CHASE, CIRCULAR_RAINBOW, RAINBOW_SWEEP,
     BOUNCE, WIPE, TWINKLE, FIRE_FLICKER, POLICE, LIGHTNING,
 )
 # Effects that hold the whole ring in one colour: an unchanged frame is not re-sent.
 # (Blinks and waves play and stop by themselves, so a repeat is a new flash.)
-HOLD_EFFECTS = frozenset({SOLID, BREATHE, COLOR_CYCLE, PALETTE_STEPS, FIRE_FLICKER})
+HOLD_EFFECTS = frozenset({SOLID, BREATHE, COLOR_CYCLE, PALETTE_STEPS, FIRE_FLICKER, RAINBOW_SWEEP})
+# The board's own animation: one write, and colour, brightness, palette, speed and intensity do not apply.
+NATIVE_EFFECTS = frozenset({RAINBOW_SWEEP})
+# Effects that ignore Ring Palette / Speed / Intensity / Color 2 (no restart when those change).
+SETTINGS_FREE_EFFECTS = frozenset({SOLID, RAINBOW_SWEEP})
 # Palette the effect uses when the Ring Palette is Default.
 DEFAULT_PALETTES = {COLOR_CYCLE: pal.RAINBOW, PALETTE_STEPS: pal.RAINBOW, RAINBOW_CHASE: pal.RAINBOW, CIRCULAR_RAINBOW: pal.RAINBOW, FIRE_FLICKER: pal.FIRE}
 
@@ -128,8 +134,8 @@ def frames(effect: str, opts: RingOptions, rng: random.Random | None = None) -> 
     elif effect == CIRCULAR_RAINBOW:
         # The board's own wave (0x11) animates round the ring by itself; each new wave
         # moves its two colours further along the rainbow, so the colours circle the
-        # board continuously. No native rainbow command is documented, so this is built
-        # from the proven wave command (about one write a second).
+        # board continuously. Built from the wave command (about one write a second);
+        # the board's native rainbow (0x10) moves up and down instead, see Rainbow Sweep.
         gap = round(43 + 85 * k / 255)  # Intensity: how far apart the two colours are (60-180 degrees)
         step = 0
         while True:
@@ -185,5 +191,8 @@ def frames(effect: str, opts: RingOptions, rng: random.Random | None = None) -> 
             for _ in range(rng.choice((1, 2, 2, 3)) - 1):
                 yield led.blink_command(lit, 0x05), led.AMBIENT_MIN_GAP_MS
             yield led.blink_command(lit, 0x05), wait(gap * rng.uniform(0.5, 1.5), s)
+    elif effect == RAINBOW_SWEEP:
+        # Native firmware rainbow moving up and down the ring; it runs until the next command.
+        yield led.rainbow_command(), led.AMBIENT_MIN_GAP_MS
     else:  # Solid and anything unknown: one write, the ring holds it.
         yield led.ring_command(_lit(opts.color, opts)), led.AMBIENT_MIN_GAP_MS

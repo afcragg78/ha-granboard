@@ -29,7 +29,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - **Games Built In** – x01 (with double out), Cricket, Count-Up, and Around The Clock, with undo, next player, and clear game.
 - **Player Colors** – each player gets a sharp, fully saturated color on the board and on your lights.
 - **Board Lighting** – hit flashes, award effects (Bullseye, Ton 80, Hat Trick and more), and the circular wipe between turns, like the official app.
-- **LED Ring Light** – use the board's ring as a light between games, with 16 effects (including Circular Rainbow) and 64 WLED-style palettes.
+- **LED Ring Light** – use the board's ring as a light between games, with 17 effects (including the board's own Rainbow Sweep) and 64 WLED-style palettes.
 - **WLED Sections** – add lights placed around the board in Configure: the lights nearest each dart glow in the player's color, and awards and turn changes sweep round them, then every light goes back exactly as it was.
 - **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
 - **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
@@ -108,7 +108,7 @@ Use these to drive WLED or anything else from an automation. See [WLED And Room 
 | `granboard.next_player` | Ends the turn, even with darts left. |
 | `granboard.end_game` | **Clear Game**: clears the current or finished game back to a blank board. Undo brings it back. |
 | `granboard.throw` | `segment` such as `T20`, `D16`, `SB`, `DB`, `MISS`. Scores a dart without the board, for testing a dashboard. |
-| `granboard.led` | One-off board light effect: `segment`, `blink`, `wave`, `ring`, `numbers`, `clear`, `sweep`, `wipe`, `award`, or the advanced test effect `raw` (see the [guide](docs/INSTALL.md#your-own-board-light-effects-granboardled)). |
+| `granboard.led` | One-off board light effect: `segment`, `blink`, `wave`, `ring`, `numbers`, `clear`, `sweep`, `wipe`, `award`, `rainbow` (the board's own rainbow sweep, runs until `clear`), or the advanced test effect `raw` (see the [guide](docs/INSTALL.md#your-own-board-light-effects-granboardled)). |
 
 All take an optional `device_id` when you have more than one board.
 
@@ -151,6 +151,7 @@ The LED command format comes from the community reference [keenanlk/granboard-bl
 | Color Cycle | Whole ring glides along the palette (rainbow by default). |
 | Palette Steps | Whole ring steps through the palette's colours, a few seconds each (Intensity = how many colours). |
 | Chase / Rainbow Chase / Bounce | One number at a time goes round (or back and forth) in palette colours. |
+| Rainbow Sweep | The board's own built-in rainbow, moving up and down across the ring. One command, and the board animates it by itself until something else is shown. Color, brightness, palette, speed and intensity don't apply. |
 | Circular Rainbow | The board's own wave animation keeps running round the whole ring while its two colours travel through the rainbow (or the palette). Intensity = how far apart the two colours are. |
 | Circular Wipe | Numbers light one by one round the ring, then it clears. |
 | Twinkle | Random numbers blink in palette colours (Intensity = how many). |

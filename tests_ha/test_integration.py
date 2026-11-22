@@ -702,3 +702,41 @@ async def test_led_raw_test_frame_holds_ring_light_until_clear(hass: HomeAssista
         with _pytest.raises(ServiceValidationError):
             await hass.services.async_call("granboard", "led", {"effect": "raw", "raw": "10" + "00" * 15}, blocking=True)
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_rainbow_sweep_effect_and_service(hass: HomeAssistant) -> None:
+    import asyncio
+
+    from custom_components.granboard import led
+
+    ring = "light.granboard_5547_led_ring"
+    real_sleep = asyncio.sleep
+
+    async def fast_sleep(*_args):
+        await real_sleep(0)
+
+    with patch(f"{CO}.asyncio.sleep", new=fast_sleep):
+        entry, coordinator, writes = await _ring_setup(hass)
+        assert "Rainbow Sweep" in hass.states.get(ring).attributes["effect_list"]
+        await hass.services.async_call("light", "turn_on", {"entity_id": ring, "effect": "Rainbow Sweep"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [led.rainbow_command()]  # one write; the board animates by itself
+        await hass.services.async_call("select", "select_option", {"entity_id": "select.granboard_5547_ring_palette", "option": "Lava"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [led.rainbow_command()]  # palette does not apply: nothing re-sent
+        # Resumes with one write after a game.
+        await hass.services.async_call("granboard", "new_game", {"game": "501", "players": ["A"]}, blocking=True)
+        await hass.services.async_call("granboard", "end_game", {}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes[-1] == led.rainbow_command()
+        await hass.services.async_call("light", "turn_off", {"entity_id": ring}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        writes.clear()
+        await hass.services.async_call("granboard", "led", {"effect": "rainbow"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes == [led.rainbow_command()] and coordinator.led_hold is True
+        await hass.services.async_call("granboard", "led", {"effect": "clear"}, blocking=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+        assert writes[-1] == bytes(20) and coordinator.led_hold is False
+    coordinator._client = None
+    await hass.config_entries.async_unload(entry.entry_id)

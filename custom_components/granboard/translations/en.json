@@ -332,7 +332,7 @@
         },
         "effect": {
           "name": "Effect",
-          "description": "segment, blink, wave, ring, numbers, clear, sweep, wipe, award, or raw (advanced test: send the Raw Frame below)."
+          "description": "segment, blink, wave, ring, numbers, clear, sweep, wipe, award, rainbow (the board's own rainbow sweep, runs until clear), or raw (advanced test: send the Raw Frame below)."
         },
         "segment": {
           "name": "Segment",

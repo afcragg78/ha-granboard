@@ -152,7 +152,7 @@ class GranboardRingLight(GranboardEntity, LightEntity, RestoreEntity):
     @callback
     def _on_ring_settings(self) -> None:
         """Palette, speed, intensity or Color 2 changed: show it now."""
-        if self._attr_is_on and self._attr_effect != effects.SOLID:
+        if self._attr_is_on and self._attr_effect not in effects.SETTINGS_FREE_EFFECTS:
             self._restart()
 
     def _options(self) -> effects.RingOptions:

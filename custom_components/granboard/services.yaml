@@ -68,7 +68,7 @@ led:
       example: segment
       selector:
         select:
-          options: [segment, blink, wave, ring, numbers, clear, sweep, wipe, award, raw]
+          options: [segment, blink, wave, ring, numbers, clear, sweep, wipe, award, rainbow, raw]
     segment:
       example: T20
       selector:

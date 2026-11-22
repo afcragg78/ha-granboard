@@ -4,13 +4,18 @@ Format from keenanlk/granboard-ble-codes (reverse engineered, tested on a
 GranBoard 3s). Commands go to the write characteristic 442f1572-...:
 
 16-byte effect command
-  [0] type: 0x01/0x02/0x03 hit blink (1-3 blinks), 0x11 wave, 0x14 light ring, 0x17 blink ring
+  [0] type: 0x01/0x02/0x03 hit blink (1-3 blinks), 0x10 rainbow sweep, 0x11 wave, 0x14 light ring, 0x17 blink ring
   [1..3] RGB, [4..6] second RGB (wave), [10] LED cell 0-59 or 0x10 full ring,
   [12] duration / speed in board frames, [15] 0x01 persistent
 20-byte command: byte n-1 is a palette colour for dart number n (0 = off,
   0x05 = orange is the only confirmed one). All zeros clears the ring.
 
 The board can drop commands sent back to back; space them ~60 ms apart.
+
+0x10 rainbow sweep: confirmed on a real Granboard 3s (Nov 2026, from the community
+"rainbow spin" lead). The board runs its own firmware rainbow that moves up and
+down across the ring and keeps running until the next command or a clear. All
+other bytes are ignored (colour, position and speed made no difference).
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ MIN_GAP_MS = 60
 
 HIT_SINGLE, HIT_DOUBLE, HIT_TRIPLE = 0x01, 0x02, 0x03
 WAVE, LIGHT_RING, BLINK = 0x11, 0x14, 0x17
+RAINBOW_SWEEP = 0x10  # native firmware rainbow (up / down), parameters ignored
 FULL_RING = 0x10
 PALETTE_ORANGE = 0x05
 
@@ -117,6 +123,13 @@ def numbers_command(numbers: Iterable[int], palette: int = PALETTE_ORANGE) -> by
     cmd = bytearray(20)
     for n in numbers:
         cmd[_number(n) - 1] = _b(palette, "palette")
+    return bytes(cmd)
+
+
+def rainbow_command() -> bytes:
+    """The board's own rainbow sweep, running until the next command. One write."""
+    cmd = bytearray(16)
+    cmd[0] = RAINBOW_SWEEP
     return bytes(cmd)
 
 
@@ -275,10 +288,9 @@ def complement(color: RGB) -> RGB:
 
 
 # ------------------------------------------------------------ raw test frames
-# Advanced / test only: send one hand-made frame. Only known command bytes are
-# allowed, plus 0x10 (the community "rainbow spin" lead, unconfirmed).
-RAINBOW_SPIN = 0x10
-RAW_COMMANDS = frozenset({HIT_SINGLE, HIT_DOUBLE, HIT_TRIPLE, RAINBOW_SPIN, WAVE, LIGHT_RING, BLINK})
+# Advanced / test only: send one hand-made frame. Only known command bytes are allowed.
+RAINBOW_SPIN = RAINBOW_SWEEP  # old name from 0.2.6
+RAW_COMMANDS = frozenset({HIT_SINGLE, HIT_DOUBLE, HIT_TRIPLE, RAINBOW_SWEEP, WAVE, LIGHT_RING, BLINK})
 
 
 def parse_raw(text: object) -> bytes:

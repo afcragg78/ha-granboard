@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.7
+
+- New LED Ring effect **Rainbow Sweep**: the board's own firmware rainbow, moving up and down across the ring. It's a single command (`0x10`, now confirmed on a real Granboard 3s; the other bytes are ignored), and the board animates it smoothly by itself until something else is shown. It's only sent again when the light resumes after a game or reconnect. Color, brightness, Ring Palette, Ring Speed, Ring Intensity and Ring Color 2 don't apply to it.
+- `granboard.led` has a new `rainbow` effect that starts the same native rainbow. It keeps running until `effect: clear`; the LED Ring light pauses meanwhile. The advanced `raw` test effect stays.
+
 ## 0.2.6
 
 - Advanced / test: `granboard.led` has a new `raw` effect with a **Raw Frame (Advanced Test)** field, to send one hand-made frame to the board, for example to try the community "rainbow spin" lead (`10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`). It only accepts hex frames of exactly 16 bytes (first byte 01, 02, 03, 10, 11, 14 or 17) or 20 bytes (the number command or all zeros). It goes through the normal LED queue with the usual spacing, and only while the board is connected.
