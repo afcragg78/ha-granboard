@@ -12,6 +12,7 @@ EVENT_HIT = "granboard_hit"
 EVENT_BUTTON = "granboard_button"
 EVENT_AWARD = "granboard_award"
 EVENT_TURN = "granboard_turn"
+EVENT_GAME_OVER = "granboard_game_over"
 
 CONF_CONNECT = "connect"
 CONF_PREFERRED_ADAPTER = "preferred_bluetooth_adapter"

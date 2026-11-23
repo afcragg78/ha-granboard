@@ -22,6 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GranboardConfigEntry, as
             LastRawSensor(coordinator, "last_raw"),
             RssiSensor(coordinator, "rssi"),
             GameSensor(coordinator, "game"),
+            PlayersSensor(coordinator, "players"),
         ]
     )
 
@@ -80,3 +81,24 @@ class GameSensor(GranboardEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return self.coordinator.game.as_dict()
+
+
+class PlayersSensor(GranboardEntity, SensorEntity):
+    """Saved profiles, the current lineup, and career stats."""
+
+    _attr_icon = "mdi:account-group"
+    # Career stats and the profile list change often enough; keep the recorder lean.
+    _unrecorded_attributes = frozenset({MATCH_ALL})
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.directory.active_count()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        directory = self.coordinator.directory
+        career = self.coordinator.career
+        return {
+            "profiles": [profile.public(career.stats_for(profile.id)) for profile in directory.profiles],
+            "lineup": directory.lineup_public(),
+        }

@@ -27,9 +27,11 @@ PLATFORMS: list[Platform] = [
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register the game services once."""
+    """Load the shared player stores and register the game services once."""
+    from .players import async_setup_profile_stores
     from .services import async_setup_services
 
+    await async_setup_profile_stores(hass)
     async_setup_services(hass)
     return True
 

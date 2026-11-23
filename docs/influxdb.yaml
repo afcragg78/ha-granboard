@@ -1,0 +1,42 @@
+# Ready-to-apply Home Assistant InfluxDB integration config for Granboard
+# career charts. Do NOT paste this in until the InfluxDB add-on is installed
+# and you have a backup of configuration.yaml (see docs/INFLUX-GRAFANA.md).
+#
+# This block goes at the top level of configuration.yaml (or a file listed
+# under `homeassistant.packages`).
+#
+# It records Granboard events and the career / game / last-hit sensors only.
+# Chatty LED Ring and WLED lights are excluded so they do not fill the database.
+
+influxdb:
+  host: a0d7b954-influxdb
+  port: 8086
+  database: homeassistant
+  username: homeassistant
+  password: !secret influxdb_password
+  ssl: false
+  max_retries: 3
+  default_measurement: state
+  include:
+    entities:
+      - sensor.game_room_granboard_3s_players
+      - sensor.game_room_granboard_3s_game
+      - sensor.game_room_granboard_3s_last_hit
+    entity_globs:
+      - sensor.*_granboard_*_players
+      - sensor.*_granboard_*_game
+      - sensor.*_granboard_*_last_hit
+    event_types:
+      - granboard_hit
+      - granboard_award
+      - granboard_turn
+      - granboard_game_over
+  exclude:
+    entity_globs:
+      - light.*granboard*
+      - light.wled*
+      - number.*granboard*
+      - select.*granboard*ring*
+      - text.*granboard*ring*
+      - switch.*granboard*
+      - binary_sensor.*granboard*

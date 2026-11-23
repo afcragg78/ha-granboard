@@ -27,6 +27,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 
 - **Live Hits** – every dart becomes a Home Assistant event and sensor update, with segment, score, and ring.
 - **Games Built In** – x01 (with double out), Cricket, Count-Up, and Around The Clock, with undo, next player, and clear game.
+- **Player Profiles** – save friends with a name, colour, initials and optional avatar, pick a lineup (Guest is a one-night slot), and track career stats (3-dart average, first-9, checkout %, 180s, Cricket MPR, a heat map and more).
 - **Player Colors** – each player gets a sharp, fully saturated color on the board and on your lights.
 - **Board Lighting** – hit flashes, award effects (Bullseye, Ton 80, Hat Trick and more), and the circular wipe between turns, like the official app.
 - **LED Ring Light** – use the board's ring as a light between games, with 17 effects (including the board's own Rainbow Sweep) and 64 WLED-style palettes.
@@ -43,6 +44,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - [Installation](#installation)
 - [Using The Phone App Instead](#using-the-phone-app-instead)
 - [Entities](#entities)
+- [Player Profiles](#player-profiles)
 - [Events](#events)
 - [Services](#services)
 - [Board Lights](#board-lights)
@@ -65,7 +67,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 3. **Close the Granboard phone app** on every device. The board takes one connection at a time. Turn the board on; its light flashes red while it waits.
 4. **Add it:** accept the **Discovered: GRANBOARD** card in **Settings > Devices & Services**, or **+ Add Integration > Granboard** and pick or type its Bluetooth address (like `AA:BB:CC:11:22:33`).
 5. **Configure** (optional): **Granboard > Configure** for General options, Sounds and Sound Volumes. Under General, **Preferred Bluetooth Adapter** (default Automatic) can pin the board to a specific USB dongle or Bluetooth proxy so it does not connect through a farther radio.
-6. **Play:** call `granboard.new_game` (for example `game: x01`, `start: 501`, `players: [Andy, Sam]`) from a dashboard button and start throwing.
+6. **Play:** add friends with `granboard.add_player`, set tonight's lineup, then call `granboard.new_game` (for example `game: x01`, `start: 501`, `players: [Andy, Sam]` — names or profile ids) from a dashboard button and start throwing.
 
 To update: HACS > Granboard > **Update**, then restart Home Assistant.
 
@@ -87,16 +89,29 @@ To update: HACS > Granboard > **Update**, then restart Home Assistant.
 | Select **Ring Palette**, Numbers **Ring Speed** / **Ring Intensity**, Text **Ring Color 2** | LED Ring effect settings (configuration). |
 | Select **Sound Theme** | Sound pack folder under `/config/www/granboard/sounds/<theme>/`, or Off to use only the Configure file boxes. The choice is restored after a restart. |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
+| Sensor **Players** | How many saved profiles you have. Attributes list each profile (id, name, colour, initials, avatar, career stats) and tonight's lineup. Excluded from the recorder. |
+
+
+## Player Profiles
+
+Save friends with `granboard.add_player` (name, colour, optional initials and avatar path such as `/local/granboard/players/andrew.jpg`). `granboard.update_player` edits a profile; `granboard.remove_player` archives it so past games keep the same player id. Profiles live in `.storage/granboard.players`.
+
+`granboard.set_lineup` sets tonight's throwing order from profile ids or names. **Guest** is a one-night slot and is never saved as a profile. `granboard.new_game` accepts profile ids or names (a plain list of names still works). If you omit `players`, the saved lineup is used.
+
+Career stats per profile are stored in `.storage/granboard.career` and shown on the Players sensor: 3-dart average, first-9 average, checkout %, doubles hit rate, 180s, ton+, Cricket MPR, win rate and games by mode, and a per-segment heat map. On first run, a profile is seeded from `input_text.darts_players` when that helper exists; Guest is left as a lineup slot only.
+
+Ready-to-apply InfluxDB and Grafana files (not installed by this release) are in [docs/INFLUX-GRAFANA.md](docs/INFLUX-GRAFANA.md).
 
 ## Events
 
-- `granboard_hit`: `segment`, `number`, `multiplier`, `score`, `ring` (`treble`, `double`, `single_inner`, `single_outer`, `bull`, `bullseye`, `miss`, or `unknown`), `raw`, `address`, `entry_id`. An unknown frame fires with `segment: unknown` and is logged as a warning, so it can be added to the map.
+- `granboard_hit`: `segment`, `number`, `multiplier`, `score`, `ring` (`treble`, `double`, `single_inner`, `single_outer`, `bull`, `bullseye`, `miss`, or `unknown`), `raw`, `address`, `entry_id`. During a game also `player`, `player_index`, `player_id` and `color`. An unknown frame fires with `segment: unknown` and is logged as a warning, so it can be added to the map.
 - `granboard_button`: the board button (`raw: BTN@`). During a game it also ends the turn (can be turned off in the integration's options).
-- `granboard_award`: `type` is one of `bullseye` (any bull; check `segment` for `SB` / `DB`), `ton` (100–139), `ton_40` (140–150), `high_ton` (151–179), `ton_80` (180), `hat_trick` (three bulls), `three_in_a_bed` (three darts in the same bed), `white_horse` (three different trebles on Cricket numbers), `bust`, `winner`. Also `player`, `player_index`, and `score` / `segment` where they apply. Ton awards count in x01 and Count-Up only.
+- `granboard_award`: `type` is one of `bullseye` (any bull; check `segment` for `SB` / `DB`), `ton` (100–139), `ton_40` (140–150), `high_ton` (151–179), `ton_80` (180), `hat_trick` (three bulls), `three_in_a_bed` (three darts in the same bed), `white_horse` (three different trebles on Cricket numbers), `bust`, `winner`, `checkout`. Also `player`, `player_index`, `player_id`, `color`, and `score` / `segment` where they apply. Ton awards count in x01 and Count-Up only.
 
-- `granboard_turn`: `player`, `player_index`, `color`, `round` when the turn changes.
+- `granboard_turn`: `player`, `player_index`, `player_id`, `color`, `round` when the turn changes, plus the visit that just ended (`last_visit`, and flat `visit_score`, `visit_bust`, `visit_player`, `visit_player_id`).
+- `granboard_game_over`: when a game is won or a round limit ends it: `game`, `game_id`, `start`, `double_out`, `winner`, `winner_id`, and `players` (name, id, colour, score, stats). Not re-fired if Home Assistant restarts with a finished game still loaded.
 - `granboard_sound`: `sound` (the trigger, e.g. `ton_80`), `url` and `theme` (the Sound Theme, e.g. `funny` or `Off`) whenever a sound plays.
-- `granboard_hit` and `granboard_award` also carry `player` and `color` (the thrower's `#rrggbb`) during a game.
+- `granboard_hit` and `granboard_award` carry `player`, `player_id` and `color` (the thrower's `#rrggbb`) during a game.
 
 Use these to drive WLED or anything else from an automation. See [WLED And Room Lights Automations](docs/INSTALL.md#13-wled-and-room-lights-automations) for ready-to-paste examples.
 
@@ -104,11 +119,15 @@ Use these to drive WLED or anything else from an automation. See [WLED And Room 
 
 | Service | Fields |
 |---|---|
-| `granboard.new_game` | `game`: `x01`, `cricket`, `count_up`, `around_the_clock` (or `301` / `501` / `701`); `start`: 301 / 501 / 701; `double_out`; `rounds` (Count-Up defaults to 8; 0 = no limit); `players`: list of names; `colors`: one per player (names like `red` or hex `#ff8800`). |
+| `granboard.new_game` | `game`: `x01`, `cricket`, `count_up`, `around_the_clock` (or `301` / `501` / `701`); `start`: 301 / 501 / 701; `double_out`; `rounds` (Count-Up defaults to 8; 0 = no limit); `players`: profile ids or names in throwing order (a plain list of names still works; Guest is a one-night slot; if omitted, the saved lineup is used); `colors`: one per player (names like `red` or hex `#ff8800`). |
 | `granboard.undo` | Takes back the last dart or turn change. Can be repeated. |
 | `granboard.next_player` | Ends the turn, even with darts left. |
 | `granboard.end_game` | **Clear Game**: clears the current or finished game back to a blank board. Undo brings it back. |
 | `granboard.throw` | `segment` such as `T20`, `D16`, `SB`, `DB`, `MISS`. Scores a dart without the board, for testing a dashboard. |
+| `granboard.add_player` | Save a profile: `name`, optional `color`, `initials`, `avatar`. Guest cannot be saved. |
+| `granboard.update_player` | `player_id` plus any of `name`, `color`, `initials`, `avatar`. |
+| `granboard.remove_player` | `player_id`. Archives the profile; career stats and past games keep the id. |
+| `granboard.set_lineup` | `players`: profile ids or names in throwing order, plus optional `colors` for one-night players. |
 | `granboard.led` | One-off board light effect: `segment`, `blink`, `wave`, `ring`, `numbers`, `clear`, `sweep`, `wipe`, `award`, `rainbow` (the board's own rainbow sweep, loops every 2 seconds until `clear` or another effect), or the advanced test effect `raw` (see the [guide](docs/INSTALL.md#your-own-board-light-effects-granboardled)). |
 
 All take an optional `device_id` when you have more than one board.
@@ -123,7 +142,7 @@ All take an optional `device_id` when you have more than one board.
 
 ### Game Sensor Attributes
 
-`game`, `start`, `double_out`, `rounds`, `round`, `current_player`, `current_player_name`, `darts` (this turn), `darts_left`, `turn_score`, `turn_complete`, `bust`, `winner`, `checkout`, `players` (each with `name`, `score`, Cricket `marks`, Around The Clock `target`, and `stats`: `darts`, `turns`, `ppd`, `ppr`, `best_turn`, Cricket `mpr`), `history` (last 20 turns), `last_awards`, `can_undo`.
+`game`, `game_id`, `start`, `double_out`, `rounds`, `round`, `current_player`, `current_player_name`, `darts` (this turn), `darts_left`, `turn_score`, `turn_complete`, `bust`, `winner`, `checkout`, `players` (each with `name`, `profile_id`, `score`, Cricket `marks`, Around The Clock `target`, and `stats`: `darts`, `turns`, `ppd`, `ppr`, `best_turn`, Cricket `mpr`), `history` (last 20 turns, including `player_id`), `last_awards`, `can_undo`.
 
 ## Board Lights
 

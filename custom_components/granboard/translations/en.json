@@ -186,6 +186,9 @@
           "playing": "Playing",
           "finished": "Finished"
         }
+      },
+      "players": {
+        "name": "Players"
       }
     },
     "button": {
@@ -278,7 +281,7 @@
         },
         "players": {
           "name": "Players",
-          "description": "Player names in throwing order."
+          "description": "Profile ids or names in throwing order. Guest is a one-night player and is not saved. If you leave this empty, the saved lineup is used."
         },
         "colors": {
           "name": "Player Colors",
@@ -373,6 +376,94 @@
         "raw": {
           "name": "Raw Frame (Advanced Test)",
           "description": "For testing only: one hand-made frame as hex, 16 bytes (first byte 01, 02, 03, 10, 11, 14 or 17) or 20 bytes (number command or all zeros). The LED Ring light pauses while it is shown; use effect clear afterwards."
+        }
+      }
+    },
+    "add_player": {
+      "name": "Add Player",
+      "description": "Save a friend profile (name, colour, optional initials and avatar). Guest cannot be saved.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "name": {
+          "name": "Name",
+          "description": "The player's display name."
+        },
+        "color": {
+          "name": "Color",
+          "description": "#RRGGBB, [r, g, b], or a colour name such as red or cyan."
+        },
+        "initials": {
+          "name": "Initials",
+          "description": "Up to three letters. Leave empty to generate them from the name."
+        },
+        "avatar": {
+          "name": "Avatar",
+          "description": "Optional image path, for example /local/granboard/players/andrew.jpg."
+        }
+      }
+    },
+    "update_player": {
+      "name": "Update Player",
+      "description": "Change a saved profile's name, colour, initials, or avatar.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "The stable id from the Players sensor."
+        },
+        "name": {
+          "name": "Name",
+          "description": "The player's display name."
+        },
+        "color": {
+          "name": "Color",
+          "description": "#RRGGBB, [r, g, b], or a colour name."
+        },
+        "initials": {
+          "name": "Initials",
+          "description": "Up to three letters."
+        },
+        "avatar": {
+          "name": "Avatar",
+          "description": "Optional image path."
+        }
+      }
+    },
+    "remove_player": {
+      "name": "Remove Player",
+      "description": "Archive a profile so it no longer appears in the lineup. Past games and career stats keep the player id.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "The stable id from the Players sensor."
+        }
+      }
+    },
+    "set_lineup": {
+      "name": "Set Lineup",
+      "description": "Set who is throwing tonight, in order. Use profile ids or names; Guest is a one-night slot and is not saved. New Game uses this lineup when you do not pass players.",
+      "fields": {
+        "device_id": {
+          "name": "Board",
+          "description": "Leave empty when you have one board."
+        },
+        "players": {
+          "name": "Players",
+          "description": "Profile ids or names in throwing order, including Guest if you want a one-night slot."
+        },
+        "colors": {
+          "name": "Player Colors",
+          "description": "Optional colours for one-night players. Saved profiles keep their own colour."
         }
       }
     }

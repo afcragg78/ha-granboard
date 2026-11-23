@@ -1,4 +1,4 @@
-"""granboard.new_game / undo / next_player / end_game / throw / led."""
+"""granboard.new_game / undo / next_player / end_game / throw / led / player profiles."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ NEW_GAME_SCHEMA = vol.Schema(
         vol.Optional("start", default=501): vol.All(vol.Coerce(int), vol.In(X01_STARTS)),
         vol.Optional("double_out", default=False): cv.boolean,
         vol.Optional("rounds"): vol.All(vol.Coerce(int), vol.Range(min=0, max=99)),
-        vol.Optional("players", default=["Player 1"]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("players"): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional("colors"): vol.All(cv.ensure_list, [vol.Any(cv.string, [vol.Coerce(int)])]),
     }
 )
@@ -99,6 +99,33 @@ def led_steps(data: dict[str, Any], player_rgb: tuple[int, int, int]) -> list[le
     return []
 THROW_SCHEMA = vol.Schema({**_BASE, vol.Required("segment"): cv.string})
 PLAIN_SCHEMA = vol.Schema(_BASE)
+PLAYER_NAME_SCHEMA = vol.Schema(
+    {
+        **_BASE,
+        vol.Required("name"): cv.string,
+        vol.Optional("color"): vol.Any(cv.string, [vol.Coerce(int)]),
+        vol.Optional("initials"): cv.string,
+        vol.Optional("avatar"): cv.string,
+    }
+)
+PLAYER_UPDATE_SCHEMA = vol.Schema(
+    {
+        **_BASE,
+        vol.Required("player_id"): cv.string,
+        vol.Optional("name"): cv.string,
+        vol.Optional("color"): vol.Any(cv.string, [vol.Coerce(int)]),
+        vol.Optional("initials"): cv.string,
+        vol.Optional("avatar"): cv.string,
+    }
+)
+PLAYER_REMOVE_SCHEMA = vol.Schema({**_BASE, vol.Required("player_id"): cv.string})
+LINEUP_SCHEMA = vol.Schema(
+    {
+        **_BASE,
+        vol.Required("players"): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("colors"): vol.All(cv.ensure_list, [vol.Any(cv.string, [vol.Coerce(int)])]),
+    }
+)
 
 
 def _coordinator(hass: HomeAssistant, call: ServiceCall) -> GranboardCoordinator:
@@ -121,7 +148,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         try:
             coordinator.new_game(
                 game=call.data["game"],
-                players=call.data["players"],
+                players=call.data.get("players"),
                 start=call.data["start"],
                 double_out=call.data["double_out"],
                 rounds=call.data.get("rounds"),
@@ -162,6 +189,61 @@ def async_setup_services(hass: HomeAssistant) -> None:
         else:
             coordinator.led_play(steps)
 
+    def _save_profiles(coordinator: GranboardCoordinator) -> None:
+        coordinator._save_players()
+        coordinator.async_update_listeners()
+
+    async def add_player(call: ServiceCall) -> None:
+        from .players import ProfileError
+
+        coordinator = _coordinator(hass, call)
+        try:
+            coordinator.directory.add_player(
+                call.data["name"],
+                color=call.data.get("color"),
+                initials=call.data.get("initials"),
+                avatar=call.data.get("avatar"),
+            )
+        except ProfileError as err:
+            raise ServiceValidationError(str(err)) from err
+        _save_profiles(coordinator)
+
+    async def update_player(call: ServiceCall) -> None:
+        from .players import ProfileError
+
+        coordinator = _coordinator(hass, call)
+        try:
+            coordinator.directory.update_player(
+                call.data["player_id"],
+                name=call.data.get("name"),
+                color=call.data.get("color"),
+                initials=call.data.get("initials"),
+                avatar=call.data.get("avatar"),
+            )
+        except ProfileError as err:
+            raise ServiceValidationError(str(err)) from err
+        _save_profiles(coordinator)
+
+    async def remove_player(call: ServiceCall) -> None:
+        from .players import ProfileError
+
+        coordinator = _coordinator(hass, call)
+        try:
+            coordinator.directory.remove_player(call.data["player_id"])
+        except ProfileError as err:
+            raise ServiceValidationError(str(err)) from err
+        _save_profiles(coordinator)
+
+    async def set_lineup(call: ServiceCall) -> None:
+        from .players import ProfileError
+
+        coordinator = _coordinator(hass, call)
+        try:
+            coordinator.directory.set_lineup(call.data["players"], call.data.get("colors"))
+        except ProfileError as err:
+            raise ServiceValidationError(str(err)) from err
+        _save_profiles(coordinator)
+
     handlers: dict[str, tuple[Any, vol.Schema]] = {
         "new_game": (new_game, NEW_GAME_SCHEMA),
         "undo": (undo, PLAIN_SCHEMA),
@@ -169,6 +251,10 @@ def async_setup_services(hass: HomeAssistant) -> None:
         "end_game": (end_game, PLAIN_SCHEMA),
         "throw": (throw, THROW_SCHEMA),
         "led": (led_service, LED_SCHEMA),
+        "add_player": (add_player, PLAYER_NAME_SCHEMA),
+        "update_player": (update_player, PLAYER_UPDATE_SCHEMA),
+        "remove_player": (remove_player, PLAYER_REMOVE_SCHEMA),
+        "set_lineup": (set_lineup, LINEUP_SCHEMA),
     }
     for name, (handler, schema) in handlers.items():
         if not hass.services.has_service(DOMAIN, name):

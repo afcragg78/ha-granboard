@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- **Player profiles**: save friends with a stable id, name, colour, initials and an optional avatar. New services `granboard.add_player`, `granboard.update_player` and `granboard.remove_player` (archives the profile so past games keep their id). A `granboard.set_lineup` service sets tonight's throwing order from profile ids or names; **Guest** is a one-night slot and is never saved. `granboard.new_game` accepts profile ids or names, and still accepts a plain list of names. If you omit `players`, the saved lineup is used.
+- New **Players** sensor (`sensor.<board>_players`) with the profile list, lineup and career stats as attributes (excluded from the Recorder, like the Game sensor).
+- **Career stats** per profile, stored in `.storage/granboard.career`: 3-dart average, first-9 average, checkout %, doubles hit rate, 180s, ton+, Cricket MPR, win rate and games by mode, and a per-segment heat map. A rolling log of throws (8,000) and games (400) is kept; cumulative totals are not lost when the log is trimmed. Undoing a finish rolls that game back out of the totals.
+- Events: `granboard_hit`, `granboard_award` and `granboard_turn` now include `player_id`. New `granboard_game_over` event (mode, winner, winner id, final scores). `granboard_turn` also has the visit that just ended (`visit_score`, `visit_player_id`, ...).
+- On first run, a profile is seeded from `input_text.darts_players` when that helper exists (for example **Andrew**). **Guest** is left as a one-night lineup slot and is not saved.
+
+
 ## 0.3.1
 
 - Configure > General has a **Preferred Bluetooth Adapter** option. Automatic (the default) leaves the radio choice to Home Assistant, the same as before. Pick a specific connectable adapter or proxy, such as a USB dongle or an ESPHome Bluetooth proxy near the board, to always connect through that radio. If the chosen adapter cannot see the board, the connection fails with a clear error instead of silently using another scanner (for example a farther proxy in another room). Advertisement-wake reconnects also honor the choice. The Granboard Connection switch and Release Board still disconnect immediately and stop all retries.

@@ -56,6 +56,7 @@ from .const import (
     EVENT_HIT,
     EVENT_SOUND,
     EVENT_TURN,
+    EVENT_GAME_OVER,
     NOTIFY_UUID,
     SERVICE_UUID,
     STORAGE_VERSION,
@@ -71,7 +72,9 @@ from .sounds import (
     volume_level,
     SOUNDS_WWW_SUBPATH,
 )
-from .game import Game
+from .career import CareerLog
+from .game import STATUS_FINISHED, Game, GameError
+from .players import PlayerDirectory
 from .preferred_adapter import (
     PREFERRED_ADAPTER_AUTO,
     ble_device_for_preferred_adapter,
@@ -112,6 +115,12 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self.data = BoardData()
         self.game = Game()
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{self.address.replace(':', '').lower()}")
+        shared = hass.data.get(DOMAIN) or {}
+        self.directory: PlayerDirectory = shared.get("players") or PlayerDirectory()
+        self.career: CareerLog = shared.get("career") or CareerLog()
+        self._players_store: Store[dict[str, Any]] | None = shared.get("players_store")
+        self._career_store: Store[dict[str, Any]] | None = shared.get("career_store")
+        self._game_over_id: str | None = None
         self._buffer = FrameBuffer()
         self._warmup = WarmupGate()
         self._dedupe = DuplicateFilter(self.debounce_ms)
@@ -165,6 +174,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     async def async_start(self) -> None:
         stored = await self._store.async_load()
         self.game = Game.load(stored)
+        if self.game.status == STATUS_FINISHED and self.game.game_id:
+            if self.career.commit_from_game(self.game):
+                self._save_career()
+            self._game_over_id = self.game.game_id
         info = bluetooth.async_last_service_info(self.hass, self.address, connectable=False)
         if info is not None:
             self.data.rssi = info.rssi
@@ -211,6 +224,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         with contextlib.suppress(Exception):
             await self.wled.async_stop()
         await self._store.async_save(self.game.dump())
+        if self._players_store is not None:
+            await self._players_store.async_save(self.directory.dump())
+        if self._career_store is not None:
+            await self._career_store.async_save(self.career.dump())
         await super().async_shutdown()
 
     async def async_set_enabled(self, enabled: bool) -> None:
@@ -447,7 +464,13 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self.next_player()
         playing = self.game.status == "playing"
         color = self.game.color_of(self.game.current) if playing else self.game.color_of(None)
-        extra = {"player": self.game.player.name, "player_index": self.game.current} if playing else {}
+        extra = {}
+        if playing:
+            extra = {
+                "player": self.game.player.name,
+                "player_index": self.game.current,
+                "player_id": self.game.player.profile_id,
+            }
         self.hass.bus.async_fire(EVENT_HIT, self._event_base({**hit.as_dict(), **extra, "color": color}))
         awards: list[dict[str, Any]] = []
         if playing:
@@ -468,13 +491,75 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             self.hass.bus.async_fire(EVENT_AWARD, self._event_base(award))
 
     # ------------------------------------------------------------ game
+    def _save_players(self) -> None:
+        if self._players_store is not None:
+            self._players_store.async_delay_save(self.directory.dump, 1)
+
+    def _save_career(self) -> None:
+        if self._career_store is not None:
+            self._career_store.async_delay_save(self.career.dump, 5)
+
+    def _sync_career(self) -> None:
+        """Commit a finished game, or roll it back if the finish was undone."""
+        game = self.game
+        if game.status == STATUS_FINISHED and game.game_id:
+            if self.career.commit_from_game(game):
+                self._save_career()
+                self._fire_game_over()
+            self._game_over_id = game.game_id
+            return
+        if self._game_over_id and game.game_id == self._game_over_id:
+            if self.career.revert_game(self._game_over_id):
+                self._save_career()
+            self._game_over_id = None
+            return
+        self._game_over_id = None
+
+    def _fire_game_over(self) -> None:
+        game = self.game
+        winner = next((player for player in game.players if player.name == game.winner), None)
+        self.hass.bus.async_fire(
+            EVENT_GAME_OVER,
+            self._event_base(
+                {
+                    "game": game.game,
+                    "game_id": game.game_id,
+                    "start": game.start if game.game == "x01" else None,
+                    "double_out": game.double_out,
+                    "rounds": game.max_rounds or None,
+                    "round": game.round,
+                    "winner": game.winner,
+                    "winner_id": winner.profile_id if winner else None,
+                    "players": [
+                        {
+                            "name": player.name,
+                            "player_id": player.profile_id,
+                            "color": player.color,
+                            "score": player.score,
+                            "stats": player.stats(game.game or ""),
+                        }
+                        for player in game.players
+                    ],
+                }
+            ),
+        )
+
     @callback
     def _game_changed(self) -> None:
+        self._sync_career()
         self._store.async_delay_save(self.game.dump, 5)
         self.async_update_listeners()
 
     @callback
     def new_game(self, **kwargs: Any) -> None:
+        from .players import ProfileError
+
+        players = kwargs.pop("players", None)
+        colors = kwargs.get("colors")
+        try:
+            kwargs["players"] = self.directory.resolve_players(players, colors)
+        except ProfileError as err:
+            raise GameError(str(err)) from err
         self.game.new_game(**kwargs)
         self._game_changed()
         if self.led_effects:
@@ -494,12 +579,29 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         steps = [s for a in awards for s in led.plan_award(a)] if self.led_effects else []
         if self.game.status == "playing":
             color = self.game.color_of(self.game.current)
-            self.hass.bus.async_fire(
-                EVENT_TURN,
-                self._event_base(
-                    {"player": self.game.player.name, "player_index": self.game.current, "color": color, "round": self.game.round}
-                ),
-            )
+            last = self.game.history[-1] if self.game.history else None
+            payload = {
+                "player": self.game.player.name,
+                "player_index": self.game.current,
+                "player_id": self.game.player.profile_id,
+                "color": color,
+                "round": self.game.round,
+            }
+            if last:
+                payload["last_visit"] = {
+                    "player": last.get("player"),
+                    "player_id": last.get("player_id"),
+                    "score": last.get("score"),
+                    "darts": last.get("darts"),
+                    "bust": last.get("bust"),
+                }
+                # Flat copies so InfluxDB can store them as fields/tags.
+                payload["visit_score"] = last.get("score")
+                payload["visit_bust"] = last.get("bust")
+                payload["visit_player"] = last.get("player")
+                payload["visit_player_id"] = last.get("player_id")
+            self.hass.bus.async_fire(EVENT_TURN, self._event_base(payload))
+
             if self.led_effects:
                 steps += led.plan_next_player(to_rgb(color))
             if not awards:

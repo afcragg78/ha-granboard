@@ -106,3 +106,79 @@ led:
       example: "10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
       selector:
         text:
+
+add_player:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    name:
+      required: true
+      example: Andrew
+      selector:
+        text:
+    color:
+      example: "#00f5ff"
+      selector:
+        text:
+    initials:
+      example: AN
+      selector:
+        text:
+    avatar:
+      example: /local/granboard/players/andrew.jpg
+      selector:
+        text:
+update_player:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    player_id:
+      required: true
+      example: "a1b2c3d4e5f64789a0b1c2d3e4f50607"
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    color:
+      example: "#7c5cff"
+      selector:
+        text:
+    initials:
+      selector:
+        text:
+    avatar:
+      selector:
+        text:
+remove_player:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    player_id:
+      required: true
+      selector:
+        text:
+set_lineup:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: granboard
+    players:
+      required: true
+      example: '["Andrew", "Guest"]'
+      selector:
+        text:
+          multiple: true
+    colors:
+      example: '["#00f5ff", "blue"]'
+      selector:
+        text:
+          multiple: true
+

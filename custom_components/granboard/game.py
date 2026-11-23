@@ -11,6 +11,7 @@ restores the state before the last dart or turn change, any number of times.
 from __future__ import annotations
 
 import copy
+from uuid import uuid4
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -84,6 +85,7 @@ class Player:
     hits: int = 0  # around the clock targets hit
     finished_rank: int | None = None
     color: str = ""
+    profile_id: str | None = None
 
     def stats(self, game: str) -> dict[str, Any]:
         darts = self.darts
@@ -101,6 +103,26 @@ class Player:
         if game == GAME_AROUND_THE_CLOCK:
             stats["hit_rate"] = round(self.hits / darts, 2) if darts else 0.0
         return stats
+
+
+
+def _player_specs(players: list[object] | None, colors: list[object] | None) -> list[dict[str, Any]]:
+    """Accept a list of names or dicts with name / color / profile_id."""
+    colors = list(colors or [])
+    specs: list[dict[str, Any]] = []
+    for index, raw in enumerate(players or []):
+        if isinstance(raw, dict):
+            name = str(raw.get("name") or "").strip()
+            color = player_color(index, raw["color"] if raw.get("color") not in (None, "") else (colors[index] if index < len(colors) else None))
+            profile_id = raw.get("profile_id") or None
+        else:
+            name = str(raw).strip()
+            color = player_color(index, colors[index] if index < len(colors) else None)
+            profile_id = None
+        if not name:
+            continue
+        specs.append({"name": name, "color": color, "profile_id": profile_id})
+    return specs or [{"name": "Player 1", "color": player_color(0), "profile_id": None}]
 
 
 class GameError(ValueError):
@@ -125,6 +147,7 @@ class Game:
         self.turn_bust = False
         self.history: list[dict[str, Any]] = []
         self.winner: str | None = None
+        self.game_id: str | None = None
         self.last_awards: list[dict[str, Any]] = []
         self._undo: list[dict[str, Any]] = []
 
@@ -132,12 +155,13 @@ class Game:
     def new_game(
         self,
         game: str,
-        players: list[str] | None = None,
+        players: list[str] | list[dict[str, Any]] | None = None,
         *,
         start: int = 501,
         double_out: bool = False,
         rounds: int | None = None,
         colors: list[object] | None = None,
+        game_id: str | None = None,
     ) -> None:
         game = str(game).strip().lower().replace("-", "_").replace(" ", "_")
         if game in ("301", "501", "701"):
@@ -146,11 +170,12 @@ class Game:
             raise GameError(f"Unknown game {game!r}; use one of {', '.join(GAMES)}")
         if game == GAME_X01 and int(start) not in X01_STARTS:
             raise GameError(f"x01 start must be one of {X01_STARTS}")
-        names = [str(n).strip() for n in (players or []) if str(n).strip()] or ["Player 1"]
-        if len(names) > 8:
+        specs = _player_specs(players, colors)
+        if len(specs) > 8:
             raise GameError("At most 8 players")
         self.__init__()  # type: ignore[misc]
         self.game = game
+        self.game_id = game_id or uuid4().hex
         self.start = int(start)
         self.double_out = bool(double_out) if game == GAME_X01 else False
         if rounds is None:
@@ -158,9 +183,8 @@ class Game:
         self.max_rounds = max(0, int(rounds))
         if game == GAME_COUNT_UP and self.max_rounds == 0:
             self.max_rounds = DEFAULT_COUNT_UP_ROUNDS
-        colors = list(colors or [])
-        for index, name in enumerate(names):
-            player = Player(name=name, color=player_color(index, colors[index] if index < len(colors) else None))
+        for index, spec in enumerate(specs):
+            player = Player(name=spec["name"], color=spec["color"], profile_id=spec.get("profile_id"))
             if game == GAME_X01:
                 player.score = self.start
             if game == GAME_CRICKET:
@@ -320,7 +344,14 @@ class Game:
         return awards
 
     def _award(self, kind: str, **extra: Any) -> dict[str, Any]:
-        return {"type": kind, "player": self.player.name, "player_index": self.current, "color": self.color_of(self.current), **extra}
+        return {
+            "type": kind,
+            "player": self.player.name,
+            "player_index": self.current,
+            "player_id": self.player.profile_id,
+            "color": self.color_of(self.current),
+            **extra,
+        }
 
     def color_of(self, index: int | None) -> str:
         if index is None or not self.players:
@@ -349,6 +380,7 @@ class Game:
         self.history.append(
             {
                 "player": player.name,
+                "player_id": player.profile_id,
                 "round": self.round,
                 "darts": [d["segment"] for d in self.turn],
                 "score": total,
@@ -405,9 +437,11 @@ class Game:
             "bust": self.turn_bust,
             "winner": self.winner,
             "checkout": self.checkout(),
+            "game_id": self.game_id,
             "players": [
                 {
                     "name": p.name,
+                    "profile_id": p.profile_id,
                     "color": p.color or player_color(i),
                     "score": p.score,
                     **({"marks": dict(p.marks)} if self.game == GAME_CRICKET else {}),
