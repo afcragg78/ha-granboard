@@ -35,6 +35,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
 - **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
 - **App Kill Switch** – release the board with one tap so the official Granboard app can connect.
+- **Darts Arena Card** – a ready-made panel dashboard for live scoring, the dartboard, New Game, ring controls and optional room lights. See [Darts Arena Card](#darts-arena-card).
 
 **This project is unofficial and is not affiliated with, endorsed by, or supported by Granboard / GRAN Darts.** The Bluetooth protocol is community reverse-engineered.
 
@@ -42,6 +43,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 
 - [Features](#features)
 - [Installation](#installation)
+- [Darts Arena Card](#darts-arena-card)
 - [Using The Phone App Instead](#using-the-phone-app-instead)
 - [Entities](#entities)
 - [Player Profiles](#player-profiles)
@@ -70,6 +72,45 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 6. **Play:** add friends with `granboard.add_player`, set tonight's lineup, then call `granboard.new_game` (for example `game: x01`, `start: 501`, `players: [Andy, Sam]` — names or profile ids) from a dashboard button and start throwing.
 
 To update: HACS > Granboard > **Update**, then restart Home Assistant.
+
+## Darts Arena Card
+
+The **Darts Arena** card is a single native Lovelace card (`custom:darts-arena-card`) for playing and watching a game. It does not use button-card, card-mod, or other custom Lovelace cards.
+
+![Darts Arena during a game](images/darts-arena/playing.jpg)
+
+### **Install These First**
+
+Do these before you add the card. Items marked *optional* are only for that feature; skip them if you do not use it.
+
+1. **Home Assistant 2025.1 or newer.**
+2. **This Granboard integration**, installed from HACS (recommended) or copied manually, with your **Granboard 3 / 3s** added and connected.
+3. **Home Assistant Bluetooth** — a USB adapter or an ESPHome Bluetooth proxy (`active: true`). The card will not see hits without the integration's Bluetooth connection.
+4. **The card module and a Lovelace resource** — copy `dashboards/darts-arena-card.js` to `/config/www/granboard/darts-arena-card.js`, then add a resource:
+
+   ```yaml
+   url: /local/granboard/darts-arena-card.js?v=2c40de96
+   type: module
+   ```
+
+   After you replace the file, change `?v=` (first eight characters of the file's sha256) or clients may keep the old module.
+
+**Optional, only if you use that feature:**
+
+- **WLED** (the Home Assistant WLED integration) — only for the card's **Room** tab lights. The example dashboard sets `wled: null` and hides those controls.
+- **Alexa Media Player** — only if you play board sounds on an Amazon Echo. The card itself does not talk to Alexa.
+- **InfluxDB / Grafana** — only for the optional stats dashboards in [docs/INFLUX-GRAFANA.md](docs/INFLUX-GRAFANA.md). The card does not use them.
+- **`input_text` / `input_boolean` helpers** — only as a fallback roster if you are not using Granboard player profiles.
+
+**Not required for this card:** button-card, card-mod, browser_mod, config-template-card, or any other custom Lovelace card.
+
+**HACS** is recommended for installing and updating this integration. It is not required if you install manually. HACS does not copy the card JS for you; you still place it in `/config/www/granboard/`.
+
+Full steps, card options, and an example **Panel** dashboard are in [dashboards/README.md](dashboards/README.md) and [dashboards/darts-arena-card.yaml](dashboards/darts-arena-card.yaml). Set `prefix` to the middle of your entity IDs (for example `granboard_5547`). New Game calls `granboard.new_game`.
+
+The glow behind the dartboard **recreates** the LED ring's current effect, palette, colours, speed and intensity from Home Assistant **settings**, and follows player and hit colours during a game. It is **not** a live per-LED readback. Changes made only in the official Granboard app may not appear until Home Assistant has the new settings.
+
+![Rainbow Sweep glow](images/darts-arena/glow-rainbow-sweep.jpg)
 
 ## Using The Phone App Instead
 

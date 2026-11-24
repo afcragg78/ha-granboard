@@ -20,7 +20,7 @@ This guide walks you through everything from a fresh install to lights, sounds, 
 12. [LED Ring Light (Between Games)](#12-led-ring-light-between-games)
 13. [WLED Sections (Lights Around The Board)](#13-wled-sections-lights-around-the-board)
 14. [WLED And Room Lights Automations](#14-wled-and-room-lights-automations)
-15. [Dashboard Examples](#15-dashboard-examples)
+15. [Dashboard Examples](#15-dashboard-examples) (start with the [Darts Arena card](#darts-arena-card-recommended))
 16. [Updating](#16-updating)
 17. [Troubleshooting](#17-troubleshooting)
 18. [Uninstalling](#18-uninstalling)
@@ -643,6 +643,27 @@ automation:
 
 Replace `<board>` with your device's ID part (for example `granboard_5547`).
 
+### Darts Arena Card (Recommended)
+
+The **Darts Arena** card is a single native Lovelace card for live scoring, the dartboard, New Game, ring controls, and optional room lights. It does **not** need button-card, card-mod, or other custom Lovelace cards.
+
+**Install These First** (full list and options: [dashboards/README.md](../dashboards/README.md)):
+
+1. This Granboard integration, with the board connected over Bluetooth.
+2. Copy [`dashboards/darts-arena-card.js`](../dashboards/darts-arena-card.js) to `/config/www/granboard/darts-arena-card.js`.
+3. Add a Lovelace resource, type **module**:
+
+   ```yaml
+   url: /local/granboard/darts-arena-card.js?v=2c40de96
+   type: module
+   ```
+
+4. Add a **Panel** view with one card of type `custom:darts-arena-card` and `prefix: <board>`. A complete dashboard is in [`dashboards/darts-arena-card.yaml`](../dashboards/darts-arena-card.yaml).
+
+WLED is optional (only for the Room tab; the example sets `wled: null`). Alexa Media Player and InfluxDB/Grafana are not used by the card. The glow behind the dartboard recreates the LED ring from Home Assistant settings; it is not a live per-LED readback.
+
+The built-in-card examples below are a simpler alternative if you do not want the Arena card.
+
 ### Simple Scoreboard (Built-In Cards Only)
 
 ```yaml
@@ -727,9 +748,9 @@ cards:
 
 Tap the LED Ring tile to open its color wheel and **Effect** list.
 
-### Fancier Cards
+### Fancier Cards (Optional)
 
-If you use [button-card](https://github.com/custom-cards/button-card) and [card-mod](https://github.com/thomasloven/lovelace-card-mod), you can build big effect buttons that call `light.turn_on` with `effect: Chase` (and so on), and a swipeable row of palette buttons that call `select.select_option` on the Ring Palette. Example effect button:
+The [Darts Arena card](#darts-arena-card-recommended) already includes LED ring effect and palette controls. You do **not** need [button-card](https://github.com/custom-cards/button-card) or [card-mod](https://github.com/thomasloven/lovelace-card-mod) for that. If you still want extra custom buttons of your own, an example effect button is:
 
 ```yaml
 type: custom:button-card
@@ -759,6 +780,7 @@ styles:
 2. Open it and click **Update** (or **Download** and pick the newest version).
 3. **Restart Home Assistant.** Updates don't take effect until you restart.
 4. Read the [CHANGELOG](../CHANGELOG.md) for new options. Your settings, sounds and game are kept.
+5. If the release includes a new Darts Arena card, replace `/config/www/granboard/darts-arena-card.js` and change the Lovelace resource `?v=` value (see [dashboards/README.md](../dashboards/README.md#updating-the-card)).
 
 **Manual:** replace `/config/custom_components/granboard` with the new folder and restart.
 

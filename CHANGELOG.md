@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- **Darts Arena card**: a native custom Lovelace card (`custom:darts-arena-card`) for live scoring, the dartboard, New Game, undo / next / end game, LED ring controls, optional Room WLED lights, sound theme, and board settings. It replaces earlier button-card dashboard templates. The module lives in `dashboards/darts-arena-card.js`; copy it to `/config/www/granboard/` and add a Lovelace resource `/local/granboard/darts-arena-card.js?v=2c40de96` (type module). Example panel dashboard: `dashboards/darts-arena-card.yaml`. Setup: [dashboards/README.md](dashboards/README.md).
+- The glow behind the dartboard recreates the LED ring's current effect, palette, colours, speed and intensity from Home Assistant settings, and follows player and hit colours during a game. It is not a live per-LED readback.
+- The card does not require button-card, card-mod, or other custom Lovelace cards. WLED, Alexa Media Player, and InfluxDB/Grafana stay optional (see **Install These First** in the card docs and the README).
+
+
 ## 0.4.0
 
 - **Player profiles**: save friends with a stable id, name, colour, initials and an optional avatar. New services `granboard.add_player`, `granboard.update_player` and `granboard.remove_player` (archives the profile so past games keep their id). A `granboard.set_lineup` service sets tonight's throwing order from profile ids or names; **Guest** is a one-night slot and is never saved. `granboard.new_game` accepts profile ids or names, and still accepts a plain list of names. If you omit `players`, the saved lineup is used.

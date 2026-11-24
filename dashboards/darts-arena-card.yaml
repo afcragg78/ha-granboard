@@ -1,0 +1,46 @@
+# Darts Arena — panel dashboard for the Granboard custom card.
+# Replace YOUR_BOARD_PREFIX with the middle of your entity IDs
+# (for example granboard_5547 if you have sensor.granboard_5547_game).
+#
+# Install the card first: see dashboards/README.md
+#   1. Copy darts-arena-card.js to /config/www/granboard/
+#   2. Add a Lovelace resource:
+#        url: /local/granboard/darts-arena-card.js?v=2c40de96
+#        type: module
+#   3. Paste this as a new dashboard (Settings > Dashboards > Add Dashboard
+#      in YAML), or add a Panel view in the UI with one card of
+#      type custom:darts-arena-card and the same options below.
+
+title: Darts
+views:
+  - title: Darts
+    path: darts
+    icon: mdi:bullseye-arrow
+    type: panel
+    cards:
+      - type: custom:darts-arena-card
+        # Required. Taken from your entities: sensor.<prefix>_game,
+        # light.<prefix>_led_ring, and so on.
+        prefix: YOUR_BOARD_PREFIX
+        # Hide the Room tab's WLED controls. Set a light (or a list of
+        # lights) only if you want those controls; the WLED integration
+        # is then required for that tab.
+        wled: null
+        # New games use granboard.new_game (players, double out, and
+        # colors come from the integration). Do not set newGameScript
+        # unless you have your own wrapper script.
+        #
+        # Optional fallback helpers, only if you are not using Granboard
+        # player profiles yet:
+        # helpers:
+        #   players: input_text.darts_players
+        #   colors: input_text.darts_colors
+        #   double: input_boolean.darts_double_out
+        #
+        # Optional Room WLED lights (WLED integration required for these):
+        # wled:
+        #   - light: light.your_wled
+        #     palette: select.your_wled_color_palette
+        #     preset: select.your_wled_preset
+        #     speed: number.your_wled_speed
+        #     intensity: number.your_wled_intensity
