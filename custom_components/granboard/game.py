@@ -374,9 +374,7 @@ class Game:
             return []
         self._snapshot()
         player = self.player
-        total = 0 if self.turn_bust else sum(d["score"] for d in self.turn)
-        if self.game == GAME_CRICKET:
-            total = sum(d.get("points", 0) for d in self.turn)
+        total = self.turn_total()
         player.turns += 1
         player.best_turn = max(player.best_turn, total)
         self.history.append(
@@ -408,6 +406,61 @@ class Game:
         self.last_awards = awards
         return awards
 
+
+    def turn_total(self) -> int:
+        """Points this visit counts, or 0 on a bust."""
+        if self.turn_bust:
+            return 0
+        if self.game == GAME_CRICKET:
+            return sum(d.get("points", d["score"]) for d in self.turn)
+        return sum(d["score"] for d in self.turn)
+
+    def open_visit_dict(self) -> dict[str, Any] | None:
+        """The in-progress or just-finished turn, before it is written to history."""
+        if not self.turn:
+            return None
+        last = self.turn[-1]
+        return {
+            "player": self.player.name,
+            "player_id": self.player.profile_id,
+            "round": self.round,
+            "score": self.turn_total(),
+            "bust": self.turn_bust,
+            "darts": [d["segment"] for d in self.turn],
+            "dart_count": len(self.turn),
+            "last_dart_score": int(last.get("score") or 0),
+            "last_dart_segment": last.get("segment"),
+        }
+
+    def last_history_visit_dict(self) -> dict[str, Any] | None:
+        """The visit that was just appended by ``next_player``."""
+        if not self.history:
+            return None
+        last = self.history[-1]
+        darts = [str(s) for s in (last.get("darts") or [])]
+        last_score = 0
+        last_segment = None
+        if darts:
+            from .protocol import parse_segment
+
+            try:
+                hit = parse_segment(darts[-1])
+                last_score = hit.score
+                last_segment = hit.segment
+            except ValueError:
+                last_segment = darts[-1]
+        return {
+            "player": last.get("player"),
+            "player_id": last.get("player_id"),
+            "round": last.get("round"),
+            "score": int(last.get("score") or 0),
+            "bust": bool(last.get("bust")),
+            "darts": darts,
+            "dart_count": len(darts),
+            "last_dart_score": last_score,
+            "last_dart_segment": last_segment,
+        }
+
     def _leader(self) -> Player:
         if self.game == GAME_X01:
             return min(self.players, key=lambda p: p.score)
@@ -434,7 +487,7 @@ class Game:
             "current_player_color": self.color_of(self.current) if self.players else None,
             "darts": list(self.turn),
             "darts_left": DARTS_PER_TURN - len(self.turn),
-            "turn_score": 0 if self.turn_bust else sum(d.get("points", d["score"]) if self.game == GAME_CRICKET else d["score"] for d in self.turn),
+            "turn_score": self.turn_total(),
             "turn_complete": self.turn_complete,
             "bust": self.turn_bust,
             "winner": self.winner,

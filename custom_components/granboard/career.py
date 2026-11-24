@@ -31,6 +31,7 @@ def _empty_aggregate() -> dict[str, Any]:
         "cricket_darts": 0,
         "games": 0,
         "wins": 0,
+        "highest_checkout": 0,
         "games_by_mode": {},
         "heatmap": {},
     }
@@ -132,6 +133,7 @@ def stats_from_aggregate(agg: dict[str, Any] | None) -> dict[str, Any]:
         "win_rate": _pct(wins, games),
         "games": games,
         "wins": wins,
+        "highest_checkout": int(row.get("highest_checkout") or 0),
         "games_by_mode": modes,
         "heatmap": dict(row.get("heatmap") or {}),
     }
@@ -153,6 +155,7 @@ def _empty_delta() -> dict[str, Any]:
         "cricket_darts": 0,
         "games": 0,
         "wins": 0,
+        "highest_checkout": 0,
         "mode": "",
         "heatmap": {},
     }
@@ -240,6 +243,7 @@ def _visit_metrics(
         "ton_plus": 1 if not bust and score >= 100 else 0,
         "checkout_attempts": checkout_attempt,
         "checkout_hits": checkout_hit,
+        "highest_checkout": int(remaining) if checkout_hit and remaining is not None else 0,
     }
 
 
@@ -266,6 +270,14 @@ def _throw_rows(game_id: str, mode: str, start: int | None, double_out: bool, vi
             }
         )
     return rows
+
+
+def _highest_from_games(games: list[dict[str, Any]], player_id: str) -> int:
+    highest = 0
+    for game in games:
+        delta = (game.get("deltas") or {}).get(player_id) or {}
+        highest = max(highest, int(delta.get("highest_checkout") or 0))
+    return highest
 
 
 class CareerLog:
@@ -307,7 +319,10 @@ class CareerLog:
             delta = deltas.setdefault(player_id, _empty_delta())
             delta["mode"] = mode
             for key, value in metrics.items():
-                delta[key] = int(delta.get(key) or 0) + value
+                if key == "highest_checkout":
+                    delta[key] = max(int(delta.get(key) or 0), int(value or 0))
+                else:
+                    delta[key] = int(delta.get(key) or 0) + value
             for segment in visit.get("darts") or []:
                 heatmap = delta.setdefault("heatmap", {})
                 heatmap[str(segment)] = int(heatmap.get(str(segment)) or 0) + 1
@@ -337,6 +352,9 @@ class CareerLog:
                 delta["cricket_darts"] = player.darts
             agg = self.aggregates.setdefault(player.profile_id, _empty_aggregate())
             _apply_delta(agg, delta, 1)
+            agg["highest_checkout"] = max(
+                int(agg.get("highest_checkout") or 0), int(delta.get("highest_checkout") or 0)
+            )
 
         winner_id = next((p["player_id"] for p in players_out if p["win"]), None)
         self.throws.extend(throws)
@@ -364,11 +382,15 @@ class CareerLog:
         row = next((g for g in self.games if g.get("game_id") == game_id), None)
         if row is None:
             return False
+        affected = list((row.get("deltas") or {}).keys())
         for player_id, delta in (row.get("deltas") or {}).items():
             if player_id in self.aggregates:
                 _apply_delta(self.aggregates[player_id], delta, -1)
         self.throws = [t for t in self.throws if t.get("game_id") != game_id]
         self.games = [g for g in self.games if g.get("game_id") != game_id]
+        for player_id in affected:
+            if player_id in self.aggregates:
+                self.aggregates[player_id]["highest_checkout"] = _highest_from_games(self.games, player_id)
         return True
 
     def _trim(self) -> None:

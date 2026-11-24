@@ -191,6 +191,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     def _save_profiles(coordinator: GranboardCoordinator) -> None:
         coordinator._save_players()
+        coordinator.notify_profiles_changed()
         coordinator.async_update_listeners()
 
     async def add_player(call: ServiceCall) -> None:

@@ -128,6 +128,9 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._players_store: Store[dict[str, Any]] | None = shared.get("players_store")
         self._career_store: Store[dict[str, Any]] | None = shared.get("career_store")
         self._game_over_id: str | None = None
+        self.last_visit: dict[str, Any] | None = None
+        self.visit_seq: int = 0
+        self._profile_listeners: list[Callable[[], None]] = []
         self._buffer = FrameBuffer()
         self._warmup = WarmupGate()
         self._dedupe = DuplicateFilter(self.debounce_ms)
@@ -489,6 +492,8 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if playing:
             awards = self.game.throw(hit)
             self._fire_awards(awards)
+            if self.game.status == STATUS_FINISHED:
+                self._publish_visit(self.game.open_visit_dict())
             self._game_changed()
         if self.led_effects:
             self.led_play(led.plan_throw(hit.as_dict(), awards, to_rgb(color)))
@@ -515,6 +520,27 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
     def _save_career(self) -> None:
         if self._career_store is not None:
             self._career_store.async_delay_save(self.career.dump, 5)
+
+    def notify_profiles_changed(self) -> None:
+        """Tell the sensor platform to add or drop per-player career entities."""
+        for listener in list(self._profile_listeners):
+            listener()
+
+    def async_on_profiles_changed(self, listener: Callable[[], None]) -> Callable[[], None]:
+        self._profile_listeners.append(listener)
+
+        def _unsub() -> None:
+            if listener in self._profile_listeners:
+                self._profile_listeners.remove(listener)
+
+        return _unsub
+
+    def _publish_visit(self, visit: dict[str, Any] | None) -> None:
+        """Record a completed visit so last-visit sensors write one Influx point."""
+        if not visit:
+            return
+        self.last_visit = visit
+        self.visit_seq += 1
 
     def _sync_career(self) -> None:
         """Commit a finished game, or roll it back if the finish was undone."""
@@ -590,7 +616,10 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
 
     @callback
     def next_player(self) -> None:
+        before = len(self.game.history)
         awards = self.game.next_player()
+        if len(self.game.history) > before:
+            self._publish_visit(self.game.last_history_visit_dict())
         self._fire_awards(awards)
         self._game_changed()
         steps = [s for a in awards for s in led.plan_award(a)] if self.led_effects else []
@@ -636,7 +665,11 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
 
     @callback
     def end_game(self) -> None:
+        # Only capture a mid-game clear; a finish already published the last visit.
+        visit = self.game.open_visit_dict() if self.game.status == STATUS_PLAYING else None
         self.game.end_game()
+        if visit:
+            self._publish_visit(visit)
         self._game_changed()
         if self.led_effects:
             self.led_play([(led.clear_command(), led.MIN_GAP_MS)])

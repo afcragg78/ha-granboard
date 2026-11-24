@@ -407,6 +407,11 @@ async def async_setup_profile_stores(hass: Any) -> dict[str, Any]:
         directory: PlayerDirectory = data["players"]
         if directory.seed_from_states(hass.states):
             players_store.async_delay_save(directory.dump, 1)
+            for entry in hass.config_entries.async_entries(DOMAIN):
+                coordinator = getattr(entry, "runtime_data", None)
+                notify = getattr(coordinator, "notify_profiles_changed", None)
+                if callable(notify):
+                    notify()
 
     if getattr(hass, "is_running", False):
         _seed()

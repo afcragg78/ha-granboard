@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- **Numeric career sensors** for each saved player profile, so InfluxDB and Grafana can chart them: 3-dart average, first-9 average, checkout percent, 180s, ton+, games played, games won, Cricket MPR and highest checkout. A board also gets **Last Visit Score** (the turn total) and **Last Dart Score**. These update only when a turn ends or a game finishes, with no polling. Unique ids follow the profile id, so renaming a player keeps the same entities. Guest is not a saved profile and has no career sensors. Counters use `state_class: total` (they can fall if you undo a finish), averages and rates use `measurement`.
+- Career logs now store **highest checkout** (the starting score of a successful checkout visit). Undoing a finish recalculates it from the games that are still in the log.
+- **InfluxDB / Grafana docs** are updated for Home Assistant 2026.x: add the InfluxDB integration in the UI, keep `docs/influxdb.yaml` as filters only (no host, password, or `event_types`), and set `measurement_attr: entity_id` so each sensor is its own measurement. The Grafana dashboard is rewritten to query these sensors with InfluxQL (averages over time, 180s / ton+, checkout %, MPR, visit scores, wins). Home Assistant does not write custom events such as `granboard_turn` to InfluxDB.
+
+
 ## 0.5.1
 
 - **Faster hit sounds.** Clips for Alexa are converted ahead of time (48 kbps, 24 kHz mono MP3) when Home Assistant starts or you change Sound Theme, so a dart no longer waits on ffmpeg. The notify call is fired without waiting, volume is set in the background (still never above 60 %), and player / URL lookups are cached. Local speakers play from the Home Assistant LAN address (`http://<home-assistant-ip>:8123/local/...`) instead of the Nabu Casa cloud URL. If the speaker is a Music Assistant wrapper, Granboard plays on the underlying player (for example the Voice PE's own media player, or the Alexa Media Player entity for an Echo) so the clip does not sit in a Music Assistant queue. Amazon's own SSML `<audio>` path still has a floor of about 1-2 seconds because the Echo fetches the file from the public HTTPS URL; a local speaker should be quicker than that.

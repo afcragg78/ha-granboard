@@ -191,6 +191,39 @@
       },
       "players": {
         "name": "Players"
+      },
+      "last_visit_score": {
+        "name": "Last Visit Score"
+      },
+      "last_dart_score": {
+        "name": "Last Dart Score"
+      },
+      "player_3_dart_average": {
+        "name": "{player} 3-Dart Average"
+      },
+      "player_first_9_average": {
+        "name": "{player} First 9 Average"
+      },
+      "player_checkout_percent": {
+        "name": "{player} Checkout Percent"
+      },
+      "player_180s": {
+        "name": "{player} 180s"
+      },
+      "player_ton_plus": {
+        "name": "{player} Ton Plus"
+      },
+      "player_games_played": {
+        "name": "{player} Games Played"
+      },
+      "player_games_won": {
+        "name": "{player} Games Won"
+      },
+      "player_cricket_mpr": {
+        "name": "{player} Cricket MPR"
+      },
+      "player_highest_checkout": {
+        "name": "{player} Highest Checkout"
       }
     },
     "button": {

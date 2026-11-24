@@ -1,36 +1,44 @@
-# Ready-to-apply Home Assistant InfluxDB integration config for Granboard
-# career charts. Do NOT paste this in until the InfluxDB add-on is installed
-# and you have a backup of configuration.yaml (see docs/INFLUX-GRAFANA.md).
+# Filter-only Home Assistant InfluxDB config for Granboard career charts.
+# The InfluxDB *connection* (URL, database, username, password) is set in the
+# UI on Home Assistant 2026.x (Settings > Devices & services > InfluxDB).
+# Do not put host / port / database / username / password here.
 #
-# This block goes at the top level of configuration.yaml (or a file listed
-# under `homeassistant.packages`).
+# Paste this top-level `influxdb:` block into configuration.yaml (or a
+# package) after you have a backup. See docs/INFLUX-GRAFANA.md.
 #
-# It records Granboard events and the career / game / last-hit sensors only.
-# Chatty LED Ring and WLED lights are excluded so they do not fill the database.
+# measurement_attr: entity_id makes each sensor its own Influx measurement
+# (for example sensor.game_room_granboard_3s_andrew_3_dart_average). That is
+# more consistent than the default (measurement = unit of measurement, or the
+# entity id when there is no unit). tags_attributes copies player / player_id
+# onto each point so Grafana can filter by player.
 
 influxdb:
-  host: a0d7b954-influxdb
-  port: 8086
-  database: homeassistant
-  username: homeassistant
-  password: !secret influxdb_password
-  ssl: false
-  max_retries: 3
-  default_measurement: state
+  measurement_attr: entity_id
+  tags_attributes:
+    - player
+    - player_id
   include:
     entities:
       - sensor.game_room_granboard_3s_players
       - sensor.game_room_granboard_3s_game
       - sensor.game_room_granboard_3s_last_hit
+      - sensor.game_room_granboard_3s_last_visit_score
+      - sensor.game_room_granboard_3s_last_dart_score
     entity_globs:
       - sensor.*_granboard_*_players
       - sensor.*_granboard_*_game
       - sensor.*_granboard_*_last_hit
-    event_types:
-      - granboard_hit
-      - granboard_award
-      - granboard_turn
-      - granboard_game_over
+      - sensor.*_granboard_*_last_visit_score
+      - sensor.*_granboard_*_last_dart_score
+      - sensor.*_granboard_*_*_3_dart_average
+      - sensor.*_granboard_*_*_first_9_average
+      - sensor.*_granboard_*_*_checkout_percent
+      - sensor.*_granboard_*_*_180s
+      - sensor.*_granboard_*_*_ton_plus
+      - sensor.*_granboard_*_*_games_played
+      - sensor.*_granboard_*_*_games_won
+      - sensor.*_granboard_*_*_cricket_mpr
+      - sensor.*_granboard_*_*_highest_checkout
   exclude:
     entity_globs:
       - light.*granboard*

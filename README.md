@@ -131,6 +131,9 @@ The glow behind the dartboard **recreates** the LED ring's current effect, palet
 | Select **Sound Theme** | Sound pack folder under `/config/www/granboard/sounds/<theme>/`, or Off to use only the Configure file boxes. The choice is restored after a restart. |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
 | Sensor **Players** | How many saved profiles you have. Attributes list each profile (id, name, colour, initials, avatar, career stats) and tonight's lineup. Excluded from the recorder. |
+| Per-player **3-Dart Average**, **First 9 Average**, **Checkout Percent**, **180s**, **Ton Plus**, **Games Played**, **Games Won**, **Cricket MPR**, **Highest Checkout** | Numeric career stats for each saved profile (Influx-friendly). Example: `sensor.game_room_granboard_3s_andrew_3_dart_average`. They update when a game finishes or a finish is undone. |
+| Sensor **Last Visit Score** | The turn total when a visit ends (0 on a bust), with player, player id and bust as attributes. |
+| Sensor **Last Dart Score** | The score of the last dart in that visit. |
 
 
 ## Player Profiles
@@ -139,9 +142,9 @@ Save friends with `granboard.add_player` (name, colour, optional initials and av
 
 `granboard.set_lineup` sets tonight's throwing order from profile ids or names. **Guest** is a one-night slot and is never saved as a profile. `granboard.new_game` accepts profile ids or names (a plain list of names still works). If you omit `players`, the saved lineup is used.
 
-Career stats per profile are stored in `.storage/granboard.career` and shown on the Players sensor: 3-dart average, first-9 average, checkout %, doubles hit rate, 180s, ton+, Cricket MPR, win rate and games by mode, and a per-segment heat map. On first run, a profile is seeded from `input_text.darts_players` when that helper exists; Guest is left as a lineup slot only.
+Career stats per profile are stored in `.storage/granboard.career` and shown on the Players sensor and as individual numeric sensors: 3-dart average, first-9 average, checkout %, doubles hit rate, 180s, ton+, Cricket MPR, highest checkout, win rate and games by mode, and a per-segment heat map. On first run, a profile is seeded from `input_text.darts_players` when that helper exists; Guest is left as a lineup slot only.
 
-Ready-to-apply InfluxDB and Grafana files (not installed by this release) are in [docs/INFLUX-GRAFANA.md](docs/INFLUX-GRAFANA.md).
+Ready-to-apply InfluxDB and Grafana files (not installed by this release) are in [docs/INFLUX-GRAFANA.md](docs/INFLUX-GRAFANA.md). The official InfluxDB integration does not record custom events, so the Grafana dashboard queries these numeric sensors. Add the InfluxDB connection in the Home Assistant UI; `docs/influxdb.yaml` is filter-only.
 
 ## Events
 
