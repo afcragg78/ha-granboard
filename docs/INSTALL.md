@@ -184,10 +184,11 @@ This is the easiest way to build a funny soundboard, or several packs you can sw
    ```
    /config/www/granboard/sounds/<theme>/<trigger>/
    ```
-   For example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. Use `.mp3`, `.wav` or `.ogg`. Trigger folder names are: `hit`, `single`, `double`, `triple`, `triple_20`, `outer_bull`, `inner_bull`, `miss`, `ton`, `ton_40`, `high_ton`, `ton_80`, `hat_trick`, `three_in_a_bed`, `white_horse`, `bust`, `checkout`, `winner`, `next_player`, `game_start`.
+   For example `/config/www/granboard/sounds/funny/ton_80/wow1.mp3`. Use `.mp3`, `.wav` or `.ogg`. Trigger folder names are: `hit`, `single`, `double`, `triple`, `triple_20`, `outer_bull`, `inner_bull`, `miss`, `cricket_miss`, `ton`, `ton_40`, `high_ton`, `ton_80`, `hat_trick`, `three_in_a_bed`, `white_horse`, `bust`, `checkout`, `winner`, `next_player`, `game_start`.
 2. **If you just created `/config/www` for the first time, restart Home Assistant once** so it starts serving that folder. After that, new theme folders and files are picked up when you open the Sound Theme dropdown or on the next dart — no restart needed.
 3. On the Granboard device page (or your darts dashboard), set **Sound Theme** to the folder name (`funny`, `default`, and so on). **Off** uses only the single-file boxes in Configure > Sounds, the same as before. The chosen theme is restored after a Home Assistant restart.
 4. Each time a sound plays, one clip is picked at random from that theme's trigger folder. If the folder is empty, it tries `default/<trigger>/`, then the Configure file for that trigger, then the next key in the usual chain (for example Triple 20 → Triple → Any Hit), at each of those layers. You do not have to fill every trigger in every theme.
+5. In **Cricket**, hit sounds play only for darts that count (15-20 or bull that the player still needs, or that can still score). A non-counting dart uses the `cricket_miss` folder, then `miss` if that folder is empty. Drop funny miss clips in `/config/www/granboard/sounds/<theme>/cricket_miss/`.
 
 Files in `www` can be read by anyone who can reach your Home Assistant without logging in. Don't put private files there.
 
@@ -274,10 +275,10 @@ Amazon Echo speakers cannot play a normal `media_player.play_media` URL ("Direct
 
 When those are in place and the speaker in Configure > Sounds is an **Alexa Media Player** device, Granboard does this for you:
 
-1. It converts the chosen clip with Home Assistant's ffmpeg (included on Home Assistant OS) to a 48 kbps, 24 kHz mono MP3, trimmed to 240 seconds.
-2. The converted file is cached in `/config/www/granboard/sounds/.alexa_cache/` (this hidden folder is not treated as a Sound Theme).
-3. It is played with `notify.alexa_media` as SSML `<audio src="https://YOUR-NABU-CASA-URL/local/granboard/sounds/.alexa_cache/....mp3"/>` (`type: tts`). The public URL comes from your Home Assistant external address (Home Assistant Cloud / Nabu Casa works).
-4. The usual volume cap (never above 60 %) still applies. One sound plays per dart.
+1. When Home Assistant starts, and when you change **Sound Theme**, it pre-converts every clip with Home Assistant's ffmpeg (included on Home Assistant OS) to a 48 kbps, 24 kHz mono MP3, trimmed to 240 seconds. A dart then uses the cached file and does not wait on ffmpeg.
+2. The converted files are cached in `/config/www/granboard/sounds/.alexa_cache/` (this hidden folder is not treated as a Sound Theme).
+3. Playback is `notify.alexa_media` as SSML `<audio src="https://YOUR-NABU-CASA-URL/local/granboard/sounds/.alexa_cache/....mp3"/>` (`type: tts`), fired without waiting. The public URL comes from your Home Assistant external address (Home Assistant Cloud / Nabu Casa works). Volume is set in the background and is never above 60 %. One sound plays per dart.
+4. Amazon still has to fetch that HTTPS file and play it, so an Echo typically stays around **1-2 seconds**. That floor is on Amazon's side. A local speaker is quicker: Granboard plays `http://YOUR-HA:8123/local/...` on the LAN and, if the speaker is a Music Assistant wrapper, uses the underlying media player so the clip does not sit in a queue.
 
 Turn on **Alexa-Compatible Audio** in Configure > Sounds to force the same conversion for a non-Alexa speaker. If conversion fails or Home Assistant has no public HTTPS URL, the original file is played instead and a warning is logged.
 

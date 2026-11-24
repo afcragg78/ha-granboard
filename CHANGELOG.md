@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+
+- **Faster hit sounds.** Clips for Alexa are converted ahead of time (48 kbps, 24 kHz mono MP3) when Home Assistant starts or you change Sound Theme, so a dart no longer waits on ffmpeg. The notify call is fired without waiting, volume is set in the background (still never above 60 %), and player / URL lookups are cached. Local speakers play from the Home Assistant LAN address (`http://<home-assistant-ip>:8123/local/...`) instead of the Nabu Casa cloud URL. If the speaker is a Music Assistant wrapper, Granboard plays on the underlying player (for example the Voice PE's own media player, or the Alexa Media Player entity for an Echo) so the clip does not sit in a Music Assistant queue. Amazon's own SSML `<audio>` path still has a floor of about 1-2 seconds because the Echo fetches the file from the public HTTPS URL; a local speaker should be quicker than that.
+- **Cricket hit sounds:** when the game is Cricket and MP3 themes are used, hit sounds play only for darts that count (15-20 or bull that the player still needs, or that can still score because another player has not closed it). Non-counting numbers, already-closed numbers, and misses play no hit sound.
+- **New `cricket_miss` slot:** put clips in `/config/www/granboard/sounds/<theme>/cricket_miss/*.mp3` (random pick). In Cricket, a dart that does not count uses this folder, then the ordinary `miss` clips if it is empty. Configure > Sounds has a matching Cricket Miss box.
+
+
 ## 0.5.0
 
 - **Darts Arena card**: a native custom Lovelace card (`custom:darts-arena-card`) for live scoring, the dartboard, New Game, undo / next / end game, LED ring controls, optional Room WLED lights, sound theme, and board settings. It replaces earlier button-card dashboard templates. The module lives in `dashboards/darts-arena-card.js`; copy it to `/config/www/granboard/` and add a Lovelace resource `/local/granboard/darts-arena-card.js?v=2c40de96` (type module). Example panel dashboard: `dashboards/darts-arena-card.yaml`. Setup: [dashboards/README.md](dashboards/README.md).

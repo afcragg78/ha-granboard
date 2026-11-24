@@ -292,6 +292,8 @@ class Game:
         key = str(hit.number)
         player = self.player
         if key not in player.marks:
+            dart["marks"] = 0
+            dart["points"] = 0
             return
         before = player.marks[key]
         marks = hit.multiplier

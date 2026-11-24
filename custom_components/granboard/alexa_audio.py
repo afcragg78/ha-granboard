@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import subprocess
+from collections.abc import Iterable
 from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
@@ -125,3 +126,50 @@ def use_alexa_audio(platform: str | None, option: bool) -> bool:
     if (platform or "") == ALEXA_PLATFORM:
         return True
     return bool(option)
+
+
+AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg"}
+
+
+def iter_sound_files(sounds_root: Path, extra: Iterable[str | Path] = ()) -> list[Path]:
+    """Theme clip files (and optional extra paths), skipping the Alexa cache folder."""
+    files: list[Path] = []
+    seen: set[Path] = set()
+    if sounds_root.is_dir():
+        for path in sounds_root.rglob("*"):
+            if not path.is_file() or path.name.startswith("."):
+                continue
+            if ALEXA_CACHE_DIR in path.parts:
+                continue
+            if path.suffix.lower() not in AUDIO_SUFFIXES:
+                continue
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            files.append(path)
+    for item in extra:
+        path = Path(item)
+        if not path.is_file():
+            continue
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        files.append(path)
+    return files
+
+
+def prepare_all_clips(
+    binary: str, sounds_root: Path, extra: Iterable[str | Path] = ()
+) -> list[tuple[Path, Path]]:
+    """Pre-convert every clip so the first dart does not wait on ffmpeg.
+
+    Returns a list of (source, cached Alexa MP3) pairs.
+    """
+    prepared: list[tuple[Path, Path]] = []
+    for src in iter_sound_files(sounds_root, extra):
+        dest = prepare_cached_clip(binary, src, sounds_root)
+        if dest is not None:
+            prepared.append((src.resolve(), dest))
+    return prepared

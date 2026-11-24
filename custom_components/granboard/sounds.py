@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Options keys, in the order Configure shows them.
 SOUND_KEYS = (
-    "hit", "single", "double", "triple", "triple_20", "outer_bull", "inner_bull", "miss",
+    "hit", "single", "double", "triple", "triple_20", "outer_bull", "inner_bull", "miss", "cricket_miss",
     "ton", "ton_40", "high_ton", "ton_80", "hat_trick", "three_in_a_bed", "white_horse",
     "bust", "checkout", "winner", "next_player", "game_start",
 )
@@ -27,7 +27,11 @@ AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg"}
 SOUNDS_WWW_SUBPATH = "www/granboard/sounds"
 
 
-def _hit_keys(hit: dict) -> list[str]:
+def _hit_keys(hit: dict, *, cricket_counts: bool | None = None) -> list[str]:
+    # In Cricket, non-counting darts (wrong number, already closed, or a miss)
+    # use cricket_miss, then the ordinary miss clips if that folder is empty.
+    if cricket_counts is False:
+        return ["cricket_miss", "miss"]
     ring = hit.get("ring")
     if ring == "bullseye":
         return ["inner_bull", "hit"]
@@ -49,14 +53,14 @@ def award_keys(awards: Iterable[dict]) -> list[str]:
     return [k for k in AWARD_PRIORITY if k in kinds]
 
 
-def pick_sound(sounds: dict[str, str], hit: dict | None = None, awards: Iterable[dict] = (), event: str | None = None) -> str | None:
+def pick_sound(sounds: dict[str, str], hit: dict | None = None, awards: Iterable[dict] = (), event: str | None = None, *, cricket_counts: bool | None = None) -> str | None:
     """Return the sound key to play, or None. Awards beat the plain hit sound."""
     candidates: list[str] = []
     if event:
         candidates.append(event)
     candidates += award_keys(awards)
     if hit is not None:
-        candidates += _hit_keys(hit)
+        candidates += _hit_keys(hit, cricket_counts=cricket_counts)
     for key in candidates:
         if str(sounds.get(key) or "").strip():
             return key
@@ -76,14 +80,14 @@ def volume_level(percent: object) -> float | None:
     return round(min(value / 100.0, MAX_VOLUME), 2)
 
 
-def candidate_keys(hit: dict | None = None, awards: Iterable[dict] = (), event: str | None = None) -> list[str]:
+def candidate_keys(hit: dict | None = None, awards: Iterable[dict] = (), event: str | None = None, *, cricket_counts: bool | None = None) -> list[str]:
     """Trigger keys to try, same order as pick_sound (event, then awards, then the hit chain)."""
     keys: list[str] = []
     if event:
         keys.append(event)
     keys += award_keys(awards)
     if hit is not None:
-        keys += _hit_keys(hit)
+        keys += _hit_keys(hit, cricket_counts=cricket_counts)
     return keys
 
 
@@ -141,6 +145,7 @@ def pick_sound_clip(
     hit: dict | None = None,
     awards: Iterable[dict] = (),
     event: str | None = None,
+    cricket_counts: bool | None = None,
     rng: random.Random | None = None,
 ) -> tuple[str, str, str | None] | None:
     """Pick (key, url, folder_theme_or_none).
@@ -156,7 +161,7 @@ def pick_sound_clip(
         layers.append(theme)
         if theme != DEFAULT_THEME:
             layers.append(DEFAULT_THEME)
-    for key in candidate_keys(hit=hit, awards=awards, event=event):
+    for key in candidate_keys(hit=hit, awards=awards, event=event, cricket_counts=cricket_counts):
         if not _safe_folder(key) and key != "Off":
             # SOUND_KEYS are all safe; still guard path joins
             if not key or "/" in key or "\\" in key or key.startswith("."):

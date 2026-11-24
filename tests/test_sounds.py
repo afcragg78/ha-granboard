@@ -150,3 +150,37 @@ def test_random_choice_stays_in_folder(tmp_path: Path):
     expected = {clip_url("funny", "hit", name) for name in names}
     assert seen <= expected
     assert len(seen) > 1
+
+
+def test_cricket_counting_hits_use_normal_keys():
+    assert pick_sound(ALL, hit("T20"), cricket_counts=True) == "triple_20"
+    assert pick_sound(ALL, hit("S19"), cricket_counts=True) == "single"
+    assert pick_sound(ALL, hit("DB"), cricket_counts=True) == "inner_bull"
+
+
+def test_cricket_non_counting_uses_cricket_miss_then_miss():
+    assert pick_sound(ALL, hit("S1"), cricket_counts=False) == "cricket_miss"
+    assert pick_sound(ALL, hit("T20"), cricket_counts=False) == "cricket_miss"
+    assert pick_sound(ALL, hit("MISS"), cricket_counts=False) == "cricket_miss"
+    assert pick_sound({"miss": "/m.mp3"}, hit("S1"), cricket_counts=False) == "miss"
+    assert pick_sound({"hit": "/h.mp3"}, hit("S1"), cricket_counts=False) is None
+
+
+def test_cricket_awards_still_beat_miss():
+    assert pick_sound(ALL, hit("S1"), [{"type": "winner"}], cricket_counts=False) == "winner"
+
+
+def test_cricket_miss_theme_folder_and_fallback(tmp_path: Path):
+    _clip(tmp_path, "funny", "cricket_miss", "oops.mp3")
+    _clip(tmp_path, "funny", "miss", "miss.mp3")
+    _clip(tmp_path, "funny", "single", "s.mp3")
+    picked = pick_sound_clip(tmp_path, "funny", {}, hit=hit("S1"), cricket_counts=False)
+    assert picked == ("cricket_miss", clip_url("funny", "cricket_miss", "oops.mp3"), "funny")
+    # counting dart still uses the hit chain
+    picked = pick_sound_clip(tmp_path, "funny", {}, hit=hit("S15"), cricket_counts=True)
+    assert picked == ("single", clip_url("funny", "single", "s.mp3"), "funny")
+    # empty cricket_miss -> miss
+    empty = tmp_path / "empty"
+    _clip(empty, "funny", "miss", "m.mp3")
+    picked = pick_sound_clip(empty, "funny", {}, hit=hit("S1"), cricket_counts=False)
+    assert picked == ("miss", clip_url("funny", "miss", "m.mp3"), "funny")

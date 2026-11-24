@@ -63,7 +63,14 @@ from .const import (
     WRITE_UUID,
 )
 from . import led
-from .alexa_audio import alexa_ssml, local_www_path, prepare_cached_clip, public_cache_url, use_alexa_audio
+from .alexa_audio import (
+    alexa_ssml,
+    local_www_path,
+    prepare_all_clips,
+    prepare_cached_clip,
+    public_cache_url,
+    use_alexa_audio,
+)
 from .colors import to_rgb
 from .sounds import (
     THEME_OFF,
@@ -73,7 +80,7 @@ from .sounds import (
     SOUNDS_WWW_SUBPATH,
 )
 from .career import CareerLog
-from .game import STATUS_FINISHED, Game, GameError
+from .game import GAME_CRICKET, STATUS_FINISHED, Game, GameError
 from .players import PlayerDirectory
 from .preferred_adapter import (
     PREFERRED_ADAPTER_AUTO,
@@ -149,6 +156,11 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         self._shut_down = False
         self.sound_theme = THEME_OFF
         self._theme_listeners: list[Callable[[], None]] = []
+        self._player_platform_cache: dict[str, str | None] = {}
+        self._playback_target_cache: dict[str, tuple[str, str | None]] = {}
+        self._alexa_base: str | None = None
+        self._alexa_url_map: dict[str, str] = {}
+        self._last_volume: dict[str, float] = {}
 
     # ------------------------------------------------------------ lifecycle
     @property
@@ -188,6 +200,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             BluetoothScanningMode.PASSIVE,
         )
         await self.hass.async_add_executor_job(self.list_sound_themes)
+        self._schedule_sound_warm()
         if self.enabled:
             self._start_loop()
 
@@ -480,7 +493,11 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if self.led_effects:
             self.led_play(led.plan_throw(hit.as_dict(), awards, to_rgb(color)))
         self._wled_safely(self.wled.throw, hit.as_dict(), awards, to_rgb(color))
-        self.play_sound(hit=hit.as_dict(), awards=awards)
+        cricket_counts = None
+        if playing and self.game.game == GAME_CRICKET:
+            last = self.game.turn[-1] if self.game.turn else None
+            cricket_counts = bool(last) and int(last.get("marks") or 0) > 0
+        self.play_sound(hit=hit.as_dict(), awards=awards, cricket_counts=cricket_counts)
         self.async_update_listeners()
 
     def _event_base(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -639,6 +656,7 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         if self.sound_theme == theme:
             return
         self.sound_theme = theme
+        self._schedule_sound_warm()
         for listener in list(self._theme_listeners):
             try:
                 listener()
@@ -655,13 +673,32 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         return _remove
 
     def _pick_sound_clip(
-        self, hit: dict[str, Any] | None, awards: list[dict[str, Any]], event: str | None
+        self,
+        hit: dict[str, Any] | None,
+        awards: list[dict[str, Any]],
+        event: str | None,
+        cricket_counts: bool | None,
     ) -> tuple[str, str, str | None] | None:
         sounds: dict[str, str] = self.entry.options.get(CONF_SOUNDS) or {}
-        return pick_sound_clip(self.sounds_root, self.sound_theme, sounds, hit=hit, awards=awards, event=event)
+        return pick_sound_clip(
+            self.sounds_root,
+            self.sound_theme,
+            sounds,
+            hit=hit,
+            awards=awards,
+            event=event,
+            cricket_counts=cricket_counts,
+        )
 
     @callback
-    def play_sound(self, *, hit: dict[str, Any] | None = None, awards: list[dict[str, Any]] | None = None, event: str | None = None) -> None:
+    def play_sound(
+        self,
+        *,
+        hit: dict[str, Any] | None = None,
+        awards: list[dict[str, Any]] | None = None,
+        event: str | None = None,
+        cricket_counts: bool | None = None,
+    ) -> None:
         """Play one clip for this moment, if any. One sound at a time."""
         sounds: dict[str, str] = self.entry.options.get(CONF_SOUNDS) or {}
         awards = awards or []
@@ -670,13 +707,21 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             return
         # An award beats the turn sound; an explicit event (game start / next player) beats a plain hit.
         self.entry.async_create_background_task(
-            self.hass, self._async_pick_and_play(hit, awards, event), name=f"{DOMAIN}-{self.address}-sound"
+            self.hass,
+            self._async_pick_and_play(hit, awards, event, cricket_counts),
+            name=f"{DOMAIN}-{self.address}-sound",
         )
 
     async def _async_pick_and_play(
-        self, hit: dict[str, Any] | None, awards: list[dict[str, Any]], event: str | None
+        self,
+        hit: dict[str, Any] | None,
+        awards: list[dict[str, Any]],
+        event: str | None,
+        cricket_counts: bool | None,
     ) -> None:
-        picked = await self.hass.async_add_executor_job(self._pick_sound_clip, hit, awards, event)
+        picked = await self.hass.async_add_executor_job(
+            self._pick_sound_clip, hit, awards, event, cricket_counts
+        )
         if picked is None:
             return
         key, url, _folder = picked
@@ -690,10 +735,101 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         await self._async_play(player, url, volume)
 
     def _player_platform(self, entity_id: str) -> str | None:
+        if entity_id in self._player_platform_cache:
+            return self._player_platform_cache[entity_id]
         from homeassistant.helpers import entity_registry as er
 
         entity = er.async_get(self.hass).async_get(entity_id)
-        return entity.platform if entity is not None else None
+        platform = entity.platform if entity is not None else None
+        self._player_platform_cache[entity_id] = platform
+        return platform
+
+    def _playback_target(self, player: str) -> tuple[str, str | None]:
+        """Prefer the native media_player under a Music Assistant wrapper.
+
+        Short clips should not wait in a Music Assistant queue. If the wrapper
+        sits on an Echo, use the Alexa Media Player entity instead.
+        """
+        if player in self._playback_target_cache:
+            return self._playback_target_cache[player]
+        platform = self._player_platform(player)
+        target = (player, platform)
+        if platform == "music_assistant":
+            try:
+                from homeassistant.helpers import entity_registry as er
+
+                ereg = er.async_get(self.hass)
+                entity = ereg.async_get(player)
+                if entity is not None and entity.device_id:
+                    siblings = [
+                        item
+                        for item in ereg.entities.values()
+                        if item.device_id == entity.device_id
+                        and item.domain == "media_player"
+                        and item.entity_id != player
+                        and item.platform != "music_assistant"
+                        and not item.disabled
+                    ]
+                    preferred = ("alexa_media", "esphome", "cast", "sonos", "kodi", "vlc_telnet", "mpd")
+                    chosen = None
+                    for name in preferred:
+                        chosen = next((item for item in siblings if item.platform == name), None)
+                        if chosen is not None:
+                            break
+                    if chosen is None and siblings:
+                        chosen = siblings[0]
+                    if chosen is not None:
+                        target = (chosen.entity_id, chosen.platform)
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("Granboard could not unwrap Music Assistant player %s", player, exc_info=True)
+        self._playback_target_cache[player] = target
+        return target
+
+    def _schedule_sound_warm(self) -> None:
+        self.entry.async_create_background_task(
+            self.hass, self._async_warm_sounds(), name=f"{DOMAIN}-{self.address}-sound-warm"
+        )
+
+    def _configured_sound_files(self) -> list[Path]:
+        www_root = Path(self.hass.config.path("www"))
+        files: list[Path] = []
+        for url in (self.entry.options.get(CONF_SOUNDS) or {}).values():
+            local = local_www_path(www_root, str(url or ""))
+            if local is not None and local.is_file():
+                files.append(local)
+        return files
+
+    def _remember_alexa_url(self, source: Path, dest: Path) -> None:
+        if not self._alexa_base:
+            return
+        public = public_cache_url(self._alexa_base, dest.name)
+        self._alexa_url_map[str(source)] = public
+        # Also key the usual /local/ URL so playback can skip path lookups.
+        try:
+            www_root = Path(self.hass.config.path("www")).resolve()
+            rel = source.resolve().relative_to(www_root)
+            self._alexa_url_map["/local/" + rel.as_posix()] = public
+        except ValueError:
+            pass
+
+    async def _async_warm_sounds(self) -> None:
+        """Convert every clip to Alexa format ahead of time; cache public URLs."""
+        from homeassistant.helpers.network import get_url
+
+        try:
+            self._alexa_base = get_url(self.hass, prefer_external=True, allow_internal=False)
+        except Exception:  # noqa: BLE001
+            self._alexa_base = None
+        try:
+            prepared = await self.hass.async_add_executor_job(
+                prepare_all_clips, self._ffmpeg_binary(), self.sounds_root, self._configured_sound_files()
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Granboard Alexa cache warm-up failed")
+            return
+        for source, dest in prepared:
+            self._remember_alexa_url(source, dest)
+        _LOGGER.debug("Granboard warmed %s Alexa clip(s)", len(prepared))
 
     def _ffmpeg_binary(self) -> str:
         data = self.hass.data.get("ffmpeg")
@@ -707,15 +843,37 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
         except Exception:  # noqa: BLE001 - fall back to PATH
             return "ffmpeg"
 
-    async def _async_alexa_url(self, original: str, processed: str) -> str | None:
-        """Convert the clip to an Alexa-safe MP3 and return a public HTTPS URL."""
+    def _internal_media_url(self, url: str) -> str:
+        """Local speakers should fetch /local clips from the LAN, not Nabu Casa."""
         from homeassistant.helpers.network import get_url
 
+        path = url
+        if "/local/" in path and (path.startswith("http://") or path.startswith("https://")):
+            path = "/local/" + path.split("/local/", 1)[1].split("?", 1)[0]
+        if path.startswith("/"):
+            try:
+                base = get_url(self.hass, prefer_external=False, allow_internal=True, allow_ip=True)
+            except Exception:  # noqa: BLE001
+                base = str(self.hass.config.internal_url or "")
+            if base:
+                return base.rstrip("/") + path
+        return url
+
+    async def _async_alexa_url(self, original: str, processed: str) -> str | None:
+        """Return a public HTTPS Alexa MP3, using the pre-built cache when possible."""
+        from homeassistant.helpers.network import get_url
+
+        for key in (original, processed):
+            cached = self._alexa_url_map.get(key)
+            if cached:
+                return cached
         www_root = Path(self.hass.config.path("www"))
         local = local_www_path(www_root, original) or local_www_path(www_root, processed)
-        source: str | Path
         if local is not None and local.is_file():
-            source = local
+            cached = self._alexa_url_map.get(str(local.resolve()))
+            if cached:
+                return cached
+            source: str | Path = local
         else:
             source = processed
         try:
@@ -727,41 +885,52 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
             return None
         if dest is None:
             return None
-        try:
-            base = get_url(self.hass, prefer_external=True, allow_internal=False)
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Granboard has no public HTTPS URL for Alexa: %s", err)
-            return None
-        return public_cache_url(base, dest.name)
+        if not self._alexa_base:
+            try:
+                self._alexa_base = get_url(self.hass, prefer_external=True, allow_internal=False)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Granboard has no public HTTPS URL for Alexa: %s", err)
+                return None
+        if isinstance(source, Path):
+            self._remember_alexa_url(source, dest)
+            return self._alexa_url_map.get(str(source.resolve()), public_cache_url(self._alexa_base, dest.name))
+        return public_cache_url(self._alexa_base, dest.name)
+
+    def _queue_volume(self, player: str, volume: float | None) -> None:
+        """Set volume without delaying playback. Never above 60 %."""
+        if volume is None:
+            return
+        level = min(volume, 0.6)
+        if self._last_volume.get(player) == level:
+            return
+        self._last_volume[player] = level
+        self.hass.async_create_task(
+            self.hass.services.async_call(
+                "media_player",
+                "volume_set",
+                {"entity_id": player, "volume_level": level},
+                blocking=False,
+            )
+        )
 
     async def _async_play(self, player: str, url: str, volume: float | None) -> None:
         try:
+            target, platform = self._playback_target(player)
             play_url = url
             if play_url.startswith("media-source://"):
                 from homeassistant.components import media_source
 
-                resolved = await media_source.async_resolve_media(self.hass, play_url, player)
+                resolved = await media_source.async_resolve_media(self.hass, play_url, target)
                 play_url = resolved.url
-            from homeassistant.components.media_player import async_process_play_media_url
-
-            processed = async_process_play_media_url(self.hass, play_url)
-            alexa = use_alexa_audio(
-                self._player_platform(player), bool(self.entry.options.get(CONF_ALEXA_AUDIO, False))
-            )
+            alexa = use_alexa_audio(platform, bool(self.entry.options.get(CONF_ALEXA_AUDIO, False)))
             if alexa:
-                https_url = await self._async_alexa_url(play_url, processed)
+                https_url = await self._async_alexa_url(play_url, play_url)
                 if https_url:
-                    if volume is not None:
-                        await self.hass.services.async_call(
-                            "media_player",
-                            "volume_set",
-                            {"entity_id": player, "volume_level": min(volume, 0.6)},
-                            blocking=True,
-                        )
+                    self._queue_volume(target, volume)
                     await self.hass.services.async_call(
                         "notify",
                         "alexa_media",
-                        {"message": alexa_ssml(https_url), "target": player, "data": {"type": "tts"}},
+                        {"message": alexa_ssml(https_url), "target": target, "data": {"type": "tts"}},
                         blocking=False,
                     )
                     return
@@ -769,16 +938,18 @@ class GranboardCoordinator(DataUpdateCoordinator[BoardData]):
                     "Granboard Alexa conversion failed for %s, playing the original file",
                     play_url,
                 )
-            if volume is not None:
-                await self.hass.services.async_call(
-                    "media_player", "volume_set", {"entity_id": player, "volume_level": min(volume, 0.6)}, blocking=True
-                )
-            await self.hass.services.async_call(
-                "media_player",
-                "play_media",
-                {"entity_id": player, "media_content_id": processed, "media_content_type": "music"},
-                blocking=False,
-            )
+            local_url = self._internal_media_url(play_url)
+            self._queue_volume(target, volume)
+            data: dict[str, Any] = {
+                "entity_id": target,
+                "media_content_id": local_url,
+                "media_content_type": "music",
+            }
+            # Only Music Assistant understands enqueue; other players may reject it.
+            if platform == "music_assistant":
+                data["announce"] = False
+                data["extra"] = {"enqueue": "replace", "announce": False}
+            await self.hass.services.async_call("media_player", "play_media", data, blocking=False)
         except Exception as err:  # noqa: BLE001 - a sound must never break scoring
             _LOGGER.warning("Granboard sound on %s failed: %s", player, err)
 

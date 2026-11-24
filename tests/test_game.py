@@ -133,7 +133,9 @@ def test_cricket_marks_points_and_close():
     g.next_player()
     throw(g, "T20")  # closed by both: no points, dead marks
     assert a.score == 60
+    assert g.turn[-1]["marks"] == 0
     assert throw(g, "S1") == []  # off-target dart is a miss in cricket
+    assert g.turn[-1]["marks"] == 0
     assert a.counted_marks == 7
 
 

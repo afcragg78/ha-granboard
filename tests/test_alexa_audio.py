@@ -12,6 +12,7 @@ from custom_components.granboard.alexa_audio import (
     convert_clip,
     ffmpeg_command,
     local_www_path,
+    prepare_all_clips,
     prepare_cached_clip,
     public_cache_url,
     use_alexa_audio,
@@ -119,3 +120,36 @@ def test_convert_failure_returns_none(tmp_path: Path):
     src.write_bytes(b"not audio")
     dest = tmp_path / "out.mp3"
     assert convert_clip(str(missing), src, dest) is False
+
+
+
+def test_prepare_all_clips_skips_cache_and_converts_theme_files(tmp_path: Path, monkeypatch):
+    from custom_components.granboard.alexa_audio import ALEXA_CACHE_DIR, iter_sound_files
+
+    theme = tmp_path / "funny" / "hit"
+    theme.mkdir(parents=True)
+    clip = theme / "a.mp3"
+    clip.write_bytes(b"clip")
+    cache = tmp_path / ALEXA_CACHE_DIR
+    cache.mkdir()
+    (cache / "cached.mp3").write_bytes(b"cached")
+    (tmp_path / "notes.txt").write_text("nope")
+    files = iter_sound_files(tmp_path)
+    assert files == [clip]
+
+    converted: list[str] = []
+
+    def fake_prepare(binary, src, sounds_root):
+        converted.append(str(src))
+        dest = sounds_root / ALEXA_CACHE_DIR / "out.mp3"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"ok")
+        return dest
+
+    import custom_components.granboard.alexa_audio as alexa_audio
+
+    monkeypatch.setattr(alexa_audio, "prepare_cached_clip", fake_prepare)
+    prepared = prepare_all_clips("ffmpeg", tmp_path)
+    assert len(prepared) == 1
+    assert prepared[0][0] == clip.resolve()
+    assert converted == [str(clip)]
