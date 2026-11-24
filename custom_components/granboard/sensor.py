@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import GranboardConfigEntry, GranboardCoordinator
 from .entity import GranboardEntity
+from .career import summarize_player_visits
 from .game import STATUS_FINISHED, STATUS_IDLE, STATUS_PLAYING
 from .player_stats import LAST_DART_KEY, LAST_VISIT_KEY, PLAYER_STATS, PlayerStat, player_object_id
 
@@ -108,7 +109,25 @@ class GameSensor(GranboardEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return self.coordinator.game.as_dict()
+        data = dict(self.coordinator.game.as_dict())
+        history = list(data.get("history") or [])
+        data["live_stats"] = [
+            {
+                "profile_id": player.get("profile_id"),
+                "name": player.get("name"),
+                "color": player.get("color"),
+                **summarize_player_visits(
+                    history,
+                    player_id=player.get("profile_id"),
+                    player_name=player.get("name"),
+                    mode=data.get("game") or "",
+                    start=data.get("start"),
+                    double_out=bool(data.get("double_out")),
+                ),
+            }
+            for player in data.get("players") or []
+        ]
+        return data
 
 
 class PlayersSensor(GranboardEntity, SensorEntity):
@@ -129,6 +148,7 @@ class PlayersSensor(GranboardEntity, SensorEntity):
         return {
             "profiles": [profile.public(career.stats_for(profile.id)) for profile in directory.profiles],
             "lineup": directory.lineup_public(),
+            "recent_games": career.recent_games(5),
         }
 
 

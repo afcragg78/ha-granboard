@@ -1,5 +1,5 @@
 /* darts-arena-card — Home Assistant Lovelace custom card (module) */
-const DARTS_ARENA_CSS = "\n:host {\n  display: block;\n  height: auto !important;\n  max-height: none !important;\n  overflow: visible;\n  overscroll-behavior: auto;\n  --arena-footer-clear: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);\n  scroll-padding-bottom: var(--arena-footer-clear);\n  background: transparent;\n}\n@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');\n\n:host, ha-card, #container, #app, #darts-app, .app {\n  --ink: var(--primary-text-color, #f3f4f7);\n  --muted: var(--secondary-text-color, #b4b8c2);\n  --accent: var(--primary-color, #5dade2);\n  --line: color-mix(in srgb, var(--primary-text-color, #fff) 18%, transparent);\n  --line-strong: color-mix(in srgb, var(--primary-text-color, #fff) 32%, transparent);\n  --fade: color-mix(in srgb, var(--primary-text-color, #fff) 6%, transparent);\n  --danger: #ff6b6b;\n  --ok: #3dd68c;\n  --warn: #ffd166;\n  --font: \"Outfit\", Inter, \"Segoe UI\", system-ui, sans-serif;\n  --ease: 180ms cubic-bezier(.2,.7,.2,1);\n  --arena-footer-clear: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);\n  font-family: var(--font);\n  color: var(--ink);\n  box-sizing: border-box;\n}\n*, *::before, *::after { box-sizing: border-box; }\n#app, .app { width: 100%; }\n:host, ha-card {\n  position: relative;\n  display: block;\n  height: auto !important;\n  max-height: none !important;\n  overflow: visible;\n  overscroll-behavior: auto;\n  scroll-padding-bottom: var(--arena-footer-clear);\n  background: transparent;\n  border: none !important;\n  box-shadow: none !important;\n}\n[hidden], [data-section][hidden] { display: none !important; }\n/* Overlay tap targets must never take layout space or paint as empty cards. */\n[id^=\"ov_\"] {\n  position: absolute !important;\n  background: transparent !important;\n  box-shadow: none !important;\n  border: none !important;\n  overflow: hidden !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  opacity: 0 !important;\n}\n.app {\n  --pc: var(--accent);\n  --ring: var(--accent);\n  --hit: var(--accent);\n  --bri: 0.7;\n  --fx-dur: 8s;\n  --neon: color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 70%, #fff 30%);\n  position: relative;\n  isolation: isolate;\n  min-height: 0;\n  height: auto;\n  padding: 0;\n  max-width: none;\n  margin: 0;\n  width: 100%;\n  overflow: visible;\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 72%, #000 28%);\n}\n@media (min-width: 901px) {\n  .app { min-height: 100%; }\n}\n.stage {\n  position: relative;\n  z-index: 1;\n  display: grid;\n  grid-template-columns: 92px minmax(0, 1fr);\n  grid-template-rows: minmax(0, 1fr);\n  grid-template-areas: \"rail main\";\n  min-height: inherit;\n}\n.main { min-width: 0; padding: 18px 36px 40px 28px; overflow: auto; }\n.rail { display: flex; }\n.top { display: none; }\na { color: inherit; }\nbutton, input, select { font: inherit; color: inherit; }\n.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }\n\n/* Top bar */\n.top {\n  grid-template-columns: auto 1fr auto;\n  align-items: end;\n  gap: 24px;\n  padding-bottom: 0;\n  border-bottom: 1px solid var(--line);\n}\n.stage > .top { display: none; }\n.stage > .rail { grid-area: rail; }\n.stage > .main { grid-area: main; }\n.stage {\n  grid-template-areas: \"rail main\";\n}\n.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; padding-bottom: 16px; }\n.brand svg { width: 22px; height: 22px; flex: 0 0 22px; translate: 0 1px; }\n.brand .name { font-size: 22px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }\n.brand .tag { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-transform: none; }\n.nav { display: flex; justify-content: center; gap: 4px 22px; flex-wrap: wrap; }\n.nav button {\n  appearance: none; background: none; border: 0; padding: 8px 0 16px;\n  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;\n  color: var(--muted); cursor: pointer; position: relative;\n  border-radius: 0; transition: color var(--ease);\n}\n.nav button:hover { color: var(--ink); }\n.nav button.on { color: var(--ink); }\n.nav button.on::after {\n  content: \"\"; position: absolute; left: 0; right: 0; bottom: -1px;\n  height: 2px; background: var(--ink);\n}\n.status { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--muted); padding-bottom: 16px; white-space: nowrap; }\n.status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }\n.status .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }\n.status .dot.wait { background: var(--warn); animation: pulse 1.6s ease-in-out infinite; }\n@keyframes pulse { 50% { opacity: .35 } }\n\n/* Type */\n.kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--muted); }\n.display { font-weight: 800; letter-spacing: -0.05em; line-height: 0.92; font-variant-numeric: tabular-nums; }\n.title { font-size: clamp(28px, 3.2vw, 42px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.05; }\n.lede { color: var(--muted); font-size: 14px; font-weight: 500; }\n.section { margin-top: 48px; }\n.section-h { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }\n.section-h h2 { margin: 0; font-size: 13px; font-weight: 650; letter-spacing: 0.08em; }\n\n/* Buttons \u2014 ghost / outline, never pills */\n.btn {\n  appearance: none; background: transparent;\n  border: 1px solid var(--line-strong);\n  border-radius: 8px;\n  padding: 10px 16px;\n  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;\n  color: var(--ink); cursor: pointer;\n  display: inline-flex; align-items: center; gap: 8px;\n  transition: border-color var(--ease), background var(--ease), color var(--ease), transform var(--ease);\n}\n.btn svg { width: 16px; height: 16px; flex: 0 0 16px; }\n.btn:hover { border-color: color-mix(in srgb, var(--ink) 40%, transparent); background: var(--fade); }\n.btn:active { transform: translateY(1px); }\n.btn.quiet { border-color: transparent; padding-left: 8px; padding-right: 8px; color: var(--muted); }\n.btn:not(.quiet) { text-decoration: none; }\n.fx .btn:not(.quiet), .modes .btn:not(.quiet) { box-shadow: inset 0 -2px 0 var(--ink); border-color: transparent; border-radius: 0; padding-left: 4px; padding-right: 4px; }\n.btn.quiet:hover { color: var(--ink); background: transparent; border-color: transparent; }\n.btn.warn:hover { border-color: var(--danger); color: var(--danger); background: transparent; }\n.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }\n.modes {\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));\n  gap: 4px 6px;\n  width: 100%;\n  overflow: visible;\n}\n.icon-row, .fx, .preset-row, .theme-row {\n  display: flex;\n  flex-wrap: nowrap;\n  gap: 4px 8px;\n  overflow-x: auto;\n  overflow-y: hidden;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: thin;\n  padding: 2px 0 8px;\n}\n.mode-tile, .icon-tile {\n  appearance: none;\n  background: transparent;\n  border: 0;\n  border-radius: 0;\n  box-shadow: none;\n  padding: 8px 4px 6px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  color: var(--muted);\n  cursor: pointer;\n  min-width: 0;\n  flex: 0 0 auto;\n  transition: color var(--ease), transform var(--ease), filter var(--ease);\n}\n.modes .mode-tile { width: 100%; min-width: 0; }\n.icon-tile { min-width: 64px; max-width: 88px; }\n.mode-tile svg, .icon-tile svg { width: 28px; height: 28px; display: block; flex: 0 0 28px; }\n.mode-label, .icon-label {\n  font-size: 10px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n  text-align: center;\n  line-height: 1.2;\n  color: inherit;\n  max-width: 100%;\n}\n.mode-tile:hover, .icon-tile:hover,\n.mode-tile:focus-visible, .icon-tile:focus-visible {\n  color: var(--ink);\n  background: transparent;\n}\n.mode-tile:hover svg, .icon-tile:hover svg,\n.mode-tile:focus-visible svg, .icon-tile:focus-visible svg {\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent, var(--primary-color)) 55%, transparent));\n}\n.mode-tile:hover .mode-label, .icon-tile:hover .icon-label,\n.mode-tile:focus-visible .mode-label, .icon-tile:focus-visible .icon-label {\n  text-shadow: 0 0 8px color-mix(in srgb, var(--accent, var(--primary-color)) 40%, transparent);\n}\n.mode-tile:active, .icon-tile:active { transform: translateY(1px); background: transparent; }\n.icon-tile.on, .mode-tile.on { color: var(--ink); background: transparent; }\n.icon-tile.on svg, .mode-tile.on svg {\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent, var(--primary-color)) 50%, transparent));\n}\n.icon-tile.on .icon-label, .mode-tile.on .mode-label {\n  box-shadow: inset 0 -2px 0 var(--ink);\n  text-shadow: 0 0 8px color-mix(in srgb, var(--accent, var(--primary-color)) 35%, transparent);\n}\n\n\n/* Game */\n.game { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 40px 64px; padding-top: 36px; align-items: start; }\n.hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 28px; }\n.score {\n  font-size: clamp(72px, 11vw, 152px); font-weight: 800; letter-spacing: -0.06em; line-height: 0.88;\n  font-variant-numeric: tabular-nums;\n  background-image: linear-gradient(\n    105deg,\n    #ffffff 0%,\n    #ffffff 36%,\n    color-mix(in srgb, var(--pc) 55%, #fff) 50%,\n    #ffffff 64%,\n    #f2f3f7 100%\n  );\n  background-size: 220% 100%;\n  background-position: 40% 0;\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--pc) 40%, transparent));\n  animation: scoreSheen 6s ease-in-out infinite;\n}\n@keyframes scoreSheen {\n  0%, 16% { background-position: 120% 0; }\n  58%, 100% { background-position: -20% 0; }\n}\n.score.idle { font-size: clamp(40px, 6vw, 64px); font-weight: 500; opacity: 0.35; letter-spacing: -0.02em; }\n.who { margin-top: 4px; }\n.who .name {\n  color: var(--pc, var(--ink));\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 85%, #fff),\n    0 0 20px var(--pc),\n    0 0 42px color-mix(in srgb, var(--pc) 65%, transparent);\n  animation: nameBreathe 2.8s ease-in-out infinite;\n}\n.meta-row { display: flex; gap: 20px; margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }\n.tray { margin-top: 36px; }\n.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 12px; }\n.slot {\n  min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;\n  border: 1px dashed color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 8px; background: transparent;\n}\n.slot.on { border-style: solid; }\n.slot span { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }\n.slot small { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }\n.slot.r-treble { border-bottom: 2px solid #e5484d; }\n.slot.r-double, .slot.r-bull { border-bottom: 2px solid #3dd68c; }\n.slot.r-bullseye { border-bottom: 2px solid #e5484d; }\n.slot.pop { animation: pop .45s cubic-bezier(.2,1.4,.4,1); }\n@keyframes pop { 0%{transform:scale(.92);opacity:0} 100%{transform:scale(1);opacity:1} }\n.roster { margin-top: 40px; }\n.row {\n  display: grid; grid-template-columns: 3px 1fr auto; gap: 16px; align-items: center;\n  padding: 14px 0; border-bottom: 1px solid var(--line);\n  position: relative;\n  opacity: 1;\n  transition: opacity 0.65s ease, filter 0.65s ease;\n}\n.row:first-child { border-top: 1px solid var(--line); }\n.app.is-play .row:not(.cur) { opacity: 0.42; filter: saturate(0.75); }\n.row .bar { align-self: stretch; background: var(--pc); transition: box-shadow 0.65s ease, background 0.65s ease; }\n.row .nm {\n  font-size: 18px; font-weight: 650; letter-spacing: -0.02em;\n  transition: color 0.65s ease, text-shadow 0.65s ease;\n}\n.row .sub { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }\n.row .pts {\n  font-size: 28px; font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums;\n  transition: font-size 0.45s ease, color 0.65s ease, text-shadow 0.65s ease, filter 0.65s ease;\n}\n.row.cur .nm {\n  color: var(--pc);\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 85%, #fff),\n    0 0 20px var(--pc),\n    0 0 42px color-mix(in srgb, var(--pc) 65%, transparent);\n  animation: nameBreathe 2.8s ease-in-out infinite;\n}\n.row.cur .pts {\n  font-size: 32px;\n  text-shadow: 0 0 16px color-mix(in srgb, var(--pc) 45%, transparent);\n}\n.row.cur .bar {\n  box-shadow: 0 0 8px var(--pc), 0 0 18px color-mix(in srgb, var(--pc) 80%, transparent);\n}\n.row.cur::after {\n  content: \"\";\n  position: absolute;\n  left: 19px; right: 0; bottom: -1px;\n  height: 2px;\n  background: linear-gradient(90deg, transparent, var(--pc), #fff, var(--pc), transparent);\n  background-size: 200% 100%;\n  box-shadow: 0 0 12px var(--pc);\n  animation: underGlow 3.2s ease-in-out infinite;\n  pointer-events: none;\n}\n@keyframes nameBreathe {\n  0%, 100% { filter: brightness(1); }\n  50% { filter: brightness(1.22); }\n}\n@keyframes underGlow {\n  0%, 100% { background-position: 0% 50%; opacity: 0.72; }\n  50% { background-position: 100% 50%; opacity: 1; }\n}\n.co { margin-top: 24px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }\n.co .lbl { display: block; font-size: 11px; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }\n.co b { font-weight: 700; }\n.co i { font-style: normal; color: var(--muted); margin: 0 8px; font-weight: 500; }\n.banner { margin-top: 20px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }\n.banner.win { color: #ffd54a; }\n.banner.bust { color: var(--danger); }\n.banner.next { font-size: 14px; font-weight: 600; color: var(--muted); }\n.board-side { position: relative; text-align: center; overflow: hidden; --board-glow: var(--pc, var(--primary-color, #5dade2)); --board-glow-a: 0.55; }\n.board-art {\n  position: relative;\n  display: block;\n  width: min(100%, calc(62vh + 36px));\n  max-width: 100%;\n  margin: 0 auto;\n  padding: 18px;\n  box-sizing: border-box;\n  overflow: hidden;\n  border-radius: 50%;\n  z-index: 0;\n  isolation: isolate;\n  pointer-events: none;\n}\n.board-art svg {\n  position: relative; z-index: 1;\n  display: block;\n  width: 100%;\n  height: auto;\n  aspect-ratio: 1 / 1;\n  overflow: visible;\n  pointer-events: auto;\n  filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--ink) 10%, transparent));\n}\n/* Soft 8-zone rim ring: at most 18px past the board, faded, restrained neon */\n.board-glow-bloom {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  pointer-events: none;\n  z-index: 0;\n  --z0: var(--board-glow);\n  --z1: var(--board-glow);\n  --z2: var(--board-glow);\n  --z3: var(--board-glow);\n  --z4: var(--board-glow);\n  --z5: var(--board-glow);\n  --z6: var(--board-glow);\n  --z7: var(--board-glow);\n  background: conic-gradient(from -22.5deg,\n    var(--z0), var(--z1), var(--z2), var(--z3),\n    var(--z4), var(--z5), var(--z6), var(--z7), var(--z0));\n  filter: blur(8px) saturate(1.12);\n  opacity: var(--board-glow-a, 0.55);\n  transition: opacity 1.5s ease, filter 0.8s linear;\n  transform-origin: center center;\n  -webkit-mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n  mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n}\n.board-side.glow-breathe .board-glow-bloom {\n  animation: boardGlowBreathe var(--board-glow-dur, 5.6s) ease-in-out infinite;\n}\n.board-side.glow-blink .board-glow-bloom {\n  animation: boardGlowBlink var(--board-glow-dur, 1.2s) linear infinite;\n}\n.board-side.glow-heartbeat .board-glow-bloom {\n  animation: boardGlowHeartbeat var(--board-glow-dur, 1.7s) linear infinite;\n}\n@keyframes boardGlowBreathe {\n  0%, 100% { opacity: var(--glow-floor, 0.3); }\n  50% { opacity: var(--board-glow-a, 0.95); }\n}\n@keyframes boardGlowBlink {\n  0%, 45% { opacity: var(--board-glow-a, 0.9); }\n  50%, 95% { opacity: 0.06; }\n  100% { opacity: var(--board-glow-a, 0.9); }\n}\n@keyframes boardGlowHeartbeat {\n  0%, 8% { opacity: var(--board-glow-a, 0.95); }\n  14% { opacity: 0.18; }\n  22% { opacity: var(--board-glow-a, 0.95); }\n  30%, 100% { opacity: 0.16; }\n}\n.board-side.glow-rainbow .board-glow-prism {\n  animation-duration: var(--board-glow-dur, 18s);\n}\n/* Rainbow rim: same 18px hug as the bloom, never a disc, never past the art clip */\n.board-glow-rainbow-clip {\n  display: none;\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  overflow: hidden;\n  pointer-events: none;\n  z-index: 0;\n  contain: paint;\n  -webkit-mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n  mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n}\n.board-glow-prism {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  background: conic-gradient(#ff2a6d, #ff8a00, #ffe600, #2bff88, #00d5ff, #2f6bff, #8a2bff, #ff2ad0, #ff2a6d);\n  filter: blur(8px) saturate(1.12);\n  opacity: 0.55;\n  will-change: transform;\n  contain: paint;\n  pointer-events: none;\n  animation: boardGlowSpin 18s linear infinite;\n}\n@keyframes boardGlowSpin {\n  from { transform: translateZ(0) rotate(0deg); }\n  to { transform: translateZ(0) rotate(360deg); }\n}\n.board-side.glow-rainbow .board-glow-rainbow-clip { display: block; }\n.board-side.glow-rainbow .board-glow-bloom {\n  will-change: transform;\n  animation: boardGlowOrbit var(--board-glow-dur, 18s) linear infinite;\n}\n@keyframes boardGlowOrbit {\n  from { transform: rotate(0deg); }\n  to { transform: rotate(360deg); }\n}\n.board-side.glow-off .board-glow-bloom { opacity: 0; }\n.board-side.glow-off .board-glow-rainbow-clip { display: none; }\n.rim-aura {\n  fill: none; stroke: var(--pc); stroke-width: 14;\n  opacity: 0.22; filter: blur(6px);\n}\n.rim-glow {\n  fill: none; stroke: var(--pc); stroke-width: 3.2;\n  opacity: 0.9; filter: blur(0.6px);\n}\n.ring-outer { fill: color-mix(in srgb, var(--ink) 8%, #111); }\n.ring-bevel { fill: none; stroke: color-mix(in srgb, var(--ink) 22%, #8a7350); stroke-width: 10; }\n.nums text { fill: #f3f4f7; font-size: 20px; font-weight: 600; text-anchor: middle; font-family: sans-serif; }\n.wires { stroke: color-mix(in srgb, var(--ink) 20%, transparent); stroke-width: .6; fill: none; }\n.hit { fill: var(--pc, var(--accent)); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 10px var(--pc, var(--accent))); animation: hitFade 20s ease-out forwards; }\n.hit.flash { animation: flash 1.1s ease-out, hitFade 20s ease-out forwards; }\n.burst { fill: none; stroke: #fff; stroke-width: 3; animation: burst .9s ease-out forwards; opacity: 0; }\n.hitlbl { position: relative; z-index: 2; margin-top: 8px; }\n.hitlbl b { display: block; font-size: clamp(28px, 4vh, 48px); font-weight: 800; letter-spacing: -0.04em; }\n.hitlbl span { display: block; margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--muted); }\n@keyframes flash { 0%,30%,60%{opacity:1;fill:#fff} 15%,45%{opacity:.35;fill:var(--pc)} 100%{opacity:.9} }\n@keyframes hitFade { 0%,92.5%{opacity:.9} 100%{opacity:0} }\n@keyframes burst { 0%{transform:scale(.4);opacity:1} 100%{transform:scale(8);opacity:0} }\n.play-actions { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); }\n.cr { display: grid; gap: 0; margin-top: 8px; text-align: center; }\n.cr .ch { font-size: 11px; font-weight: 650; color: var(--muted); padding: 8px 4px; }\n.cr .ct { font-weight: 700; font-size: 14px; padding: 8px 4px; border-top: 1px solid var(--line); }\n.cr .ct.closed { opacity: .35; text-decoration: line-through; }\n.cr .cm { height: 36px; display: flex; align-items: center; justify-content: center; border-top: 1px solid var(--line); }\n.cr .cm svg { width: 18px; height: 18px; fill: none; stroke: var(--pc, var(--accent)); stroke-width: 2.2; stroke-linecap: round; }\n\n/* Forms & pickers */\n.field { display: grid; gap: 8px; margin: 16px 0; }\n.field label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }\n.field input[type=text], .field select {\n  background: transparent; border: 0; border-bottom: 1px solid var(--line);\n  border-radius: 0; padding: 10px 0; outline: none; font-size: 16px; font-weight: 500;\n}\n.field input[type=text]:focus, .field select:focus { border-bottom-color: var(--ink); }\n.toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); cursor: pointer; }\n.toggle span { font-size: 15px; font-weight: 600; }\n.toggle i {\n  width: 36px; height: 20px; border: 1px solid var(--line); border-radius: 8px; position: relative; display: inline-block;\n}\n.toggle i::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 3px; transition: transform var(--ease), background var(--ease); }\n.toggle.on i { border-color: var(--ink); }\n.toggle.on i::after { transform: translateX(16px); background: var(--ink); }\n\n.swatches, .palettes, .fx { display: flex; flex-wrap: wrap; gap: 8px; }\n.swatch {\n  width: 32px; height: 32px; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);\n  border-radius: 8px; cursor: pointer; padding: 0; background: center/cover no-repeat;\n  transition: transform var(--ease), outline-color var(--ease);\n}\n.swatch:hover { transform: translateY(-1px); }\n.swatch.on { outline: 2px solid var(--ink); outline-offset: 3px; }\n.pal {\n  width: 148px; height: 64px; border: 0; border-radius: 6px; cursor: pointer;\n  padding: 0 10px 8px; display: flex; align-items: flex-end;\n  font-size: 11px; font-weight: 650; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7);\n  text-align: left; overflow: hidden; position: relative;\n}\n.pal.on { outline: 2px solid var(--ink); outline-offset: 3px; }\n.fx button { }\n.range { display: grid; gap: 8px; margin: 20px 0; }\n.range label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }\n.range input[type=range] {\n  appearance: none; height: 16px; background: transparent; border-radius: 0; outline: none; width: 100%;\n  margin: 0; padding: 0;\n}\n.range input[type=range]::-webkit-slider-runnable-track {\n  height: 2px; background: color-mix(in srgb, var(--ink) 40%, transparent); border-radius: 0;\n}\n.range input[type=range]::-webkit-slider-thumb {\n  appearance: none; width: 14px; height: 14px; border-radius: 2px; background: var(--ink); border: 0; cursor: pointer;\n  margin-top: -6px;\n}\n.range input[type=range]::-moz-range-track {\n  height: 2px; background: color-mix(in srgb, var(--ink) 40%, transparent); border: 0;\n}\n.range input[type=range]::-moz-range-thumb {\n  width: 14px; height: 14px; border-radius: 2px; background: var(--ink); border: 0; cursor: pointer;\n}\n.def { display: grid; grid-template-columns: 180px 1fr; gap: 8px 24px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }\n.def dt { font-weight: 600; color: var(--muted); }\n.def dd { margin: 0; font-weight: 600; }\n.note { margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--muted); max-width: 52ch; line-height: 1.5; }\n\n/* Modal */\n.modal-bg { position: fixed; inset: 0; background: color-mix(in srgb, #000 40%, transparent); display: flex; align-items: center; justify-content: center; z-index: 20; }\n.modal { background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 88%, #fff 12%); padding: 28px 32px; max-width: 420px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 8px; }\n.modal p { margin: 0 0 20px; font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }\n\n\n/* Active lighting \u2014 Dynaframe-style edge blooms and color washes */\n.lights, .halo-wrap, .key-halo { display: none !important; }\n.edge {\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n}\n.edge i {\n  position: absolute;\n  display: block;\n  pointer-events: none;\n  will-change: box-shadow;\n  transition: box-shadow 0.2s linear;\n}\n.edge .t0 { left: 0; top: 0; width: 34%; height: 2px; box-shadow: var(--z0); }\n.edge .t1 { left: 33%; top: 0; width: 34%; height: 2px; box-shadow: var(--z1); }\n.edge .t2 { left: 66%; top: 0; width: 34%; height: 2px; box-shadow: var(--z2); }\n.edge .r0 { right: 0; top: 0; width: 2px; height: 34%; box-shadow: var(--z2); }\n.edge .r1 { right: 0; top: 33%; width: 2px; height: 34%; box-shadow: var(--z3); }\n.edge .r2 { right: 0; top: 66%; width: 2px; height: 34%; box-shadow: var(--z4); }\n.edge .b2 { left: 66%; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z4); }\n.edge .b1 { left: 33%; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z5); }\n.edge .b0 { left: 0; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z6); }\n.edge .l2 { left: 0; top: 66%; width: 2px; height: 34%; box-shadow: var(--z6); }\n.edge .l1 { left: 0; top: 33%; width: 2px; height: 34%; box-shadow: var(--z7); }\n.edge .l0 { left: 0; top: 0; width: 2px; height: 34%; box-shadow: var(--z0); }\n\n\n/* Left rail (TV / tablet) */\n.rail {\n  flex-direction: column;\n  align-items: center;\n  gap: 16px;\n  padding: 20px 8px 24px;\n  border-right: 1px solid var(--line);\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 55%, transparent);\n  min-height: 0;\n  overflow: hidden;\n}\n.rail-av {\n  width: 44px; height: 44px; border-radius: 50%;\n  display: grid; place-items: center;\n  border: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 45%, transparent);\n  box-shadow: 0 0 12px color-mix(in srgb, var(--primary-color, var(--accent)) 28%, transparent);\n  color: var(--ink);\n}\n.rail-av svg { width: 22px; height: 22px; }\n.rail-nav {\n  display: flex; flex-direction: column; gap: 2px; width: 100%; flex: 1;\n}\n.rail-nav button {\n  appearance: none; background: none; border: 0; border-radius: 0;\n  display: flex; flex-direction: column; align-items: center; gap: 4px;\n  padding: 10px 4px; color: var(--muted); cursor: pointer;\n  font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;\n  position: relative; transition: color var(--ease);\n}\n.rail-nav button svg { width: 18px; height: 18px; }\n.rail-nav button:hover { color: var(--ink); }\n.rail-nav button.on { color: var(--ink); }\n.rail-nav button.on::before {\n  content: \"\"; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px;\n  background: var(--neon, var(--ink));\n  box-shadow: 0 0 8px color-mix(in srgb, var(--primary-color, var(--accent)) 55%, transparent);\n}\n.rail .status { writing-mode: horizontal-tb; flex-direction: column; text-align: center; white-space: normal; padding: 0; font-size: 9px; letter-spacing: 0.04em; line-height: 1.3; }\n\n/* Omni game (TV / tablet) */\n.game-omni {\n  display: grid;\n  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);\n  gap: 20px 36px;\n  align-items: start;\n}\n.omni-left { min-width: 0; display: flex; flex-direction: column; gap: 16px; }\n.omni-board { min-width: 0; }\n.game-key { display: none; }\n\n.match {\n  display: grid;\n  grid-template-columns: auto 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 10px 4px 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  box-shadow: 0 1px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 8%, transparent);\n}\n.match-mid { text-align: center; min-width: 0; }\n.match-title { font-size: clamp(22px, 2.4vw, 32px); font-weight: 800; letter-spacing: -0.05em; line-height: 1; }\n.match-sub { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }\n.chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }\n.chips span {\n  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;\n  padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--muted);\n}\n.legs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }\n.legs button {\n  appearance: none; background: none; border: 0; border-radius: 0; cursor: pointer;\n  padding: 8px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;\n  color: var(--muted);\n}\n.legs button.on {\n  color: var(--ink);\n  box-shadow: inset 0 -2px 0 var(--neon, var(--ink)), 0 4px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 18%, transparent);\n}\n\n.avatar {\n  width: 44px; height: 44px; border-radius: 50%;\n  display: grid; place-items: center;\n  font-size: 16px; font-weight: 800; letter-spacing: -0.03em;\n  color: var(--ink);\n  border: 2px solid var(--pc, var(--primary-color, var(--accent)));\n  background: color-mix(in srgb, var(--pc, var(--primary-color)) 16%, transparent);\n  transition: box-shadow 0.65s ease, border-color 0.65s ease;\n}\n.avatar.on {\n  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 40%, transparent), 0 0 14px color-mix(in srgb, var(--pc) 45%, transparent);\n}\n\n.score-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; }\n.score-row.multi { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }\n\n.pl {\n  position: relative;\n  isolation: isolate;\n  padding: 16px 16px 18px;\n  border: 1px solid var(--line);\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 78%, transparent);\n  opacity: 1;\n  transition: opacity 0.65s ease, filter 0.65s ease, border-color 0.65s ease;\n}\n.app.is-play .pl:not(.cur) { opacity: 0.5; filter: saturate(0.8); }\n.pl-head { display: flex; align-items: center; gap: 10px; }\n.pl-name { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }\n.pl-score {\n  margin-top: 8px;\n  font-size: clamp(56px, 7vw, 96px);\n  font-weight: 800; letter-spacing: -0.07em; line-height: 0.9;\n  font-variant-numeric: tabular-nums;\n}\n.pl-score.idle { display: none; }\n.pl.cur .pl-score {\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 50%, transparent),\n    0 0 22px color-mix(in srgb, var(--pc) 28%, transparent);\n}\n.pl.cur .pl-name {\n  color: var(--pc);\n  text-shadow: 0 0 12px color-mix(in srgb, var(--pc) 40%, transparent);\n}\n.pl-stats { margin: 12px 0 0; display: grid; gap: 6px; }\n.pl-stats div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 6px; }\n.pl-stats dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }\n.pl-stats dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }\n\n.your-turn {\n  margin-top: 10px;\n  padding: 7px 10px;\n  font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: none; text-align: center;\n  color: var(--ink);\n  border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--pc) 16%, transparent);\n  text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 40%, transparent);\n  box-shadow: 0 0 14px color-mix(in srgb, var(--pc) 22%, transparent);\n}\n\n/* Static, edge-contained soft neon glow. No rotation, no conic square, no continuous animation. */\n.pl, .key-hero-wrap { overflow: hidden; }\n.pl > .pl-head, .pl > .your-turn, .pl > .pl-score, .pl > .pl-stats,\n.key-hero-wrap > .key-hero { position: relative; z-index: 1; }\n.halo-wrap {\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  overflow: hidden;\n  border-radius: inherit;\n  pointer-events: none !important;\n  contain: strict;\n  z-index: 0;\n  transform: translateZ(0);\n}\n.pl .halo-wrap { border-radius: 10px; }\n.key-halo { border-radius: 18px; }\n.pl:not(.cur) .halo-wrap,\n.key-hero-wrap:not(.cur) .key-halo { display: none; }\n.halo-glow,\n.halo-ring {\n  position: absolute;\n  pointer-events: none !important;\n  animation: none;\n  will-change: auto;\n}\n.halo-glow {\n  inset: 0;\n  border-radius: inherit;\n  background:\n    radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 38%, transparent), transparent 70%),\n    radial-gradient(ellipse 70% 60% at 0% 80%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 18%, transparent), transparent 68%),\n    radial-gradient(ellipse 70% 60% at 100% 80%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 16%, transparent), transparent 68%);\n  opacity: 0.7;\n}\n.halo-ring {\n  inset: 0;\n  border-radius: inherit;\n  background: none;\n  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 40%, transparent);\n  opacity: 0.9;\n}\n.pl.cur { border-color: color-mix(in srgb, var(--pc) 35%, transparent); }\n\n.badge {\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  min-width: 88px; padding: 10px 12px; text-align: center;\n  border: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 28%, transparent);\n  border-radius: 10px;\n  box-shadow: 0 0 16px color-mix(in srgb, var(--primary-color, var(--accent)) 12%, transparent);\n}\n.badge-k, .badge-g { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }\n.badge strong { font-size: 36px; font-weight: 800; letter-spacing: -0.06em; line-height: 1; margin: 4px 0; }\n\n.dart-tray .kicker { margin-bottom: 8px; }\n.dart-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }\n.dart-card {\n  border: 1px solid var(--line);\n  border-radius: 8px;\n  overflow: hidden;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 70%, transparent);\n  min-height: 86px;\n  display: flex; flex-direction: column;\n}\n.dart-card svg { display: block; width: 100%; height: 70px; background: #14161c; }\n.dart-card .dc-meta { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 8px 8px; }\n.dart-card .dc-meta b { font-size: 16px; font-weight: 800; letter-spacing: -0.03em; }\n.dart-card .dc-meta span { font-size: 12px; font-weight: 700; color: var(--muted); }\n.dart-card.empty { align-items: center; justify-content: center; border-style: dashed; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }\n.crop-dot { fill: #fff; stroke: var(--pc, #fff); stroke-width: 2; filter: drop-shadow(0 0 5px var(--pc, #fff)); }\n.heat-layer { mix-blend-mode: screen; pointer-events: none; }\n.heat { opacity: 0.22; filter: blur(9px); }\n.scatter { filter: drop-shadow(0 0 2px #fff); }\n\n/* Phone \u2014 DartsKEY-inspired */\n.key-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }\n.key-mode { font-size: 20px; font-weight: 800; letter-spacing: -0.05em; }\n.key-meta { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }\n.key-hero-wrap { position: relative; isolation: isolate; }\n.key-halo { position: absolute; inset: 0; }\n.key-hero {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-height: 176px;\n  padding: 12px 112px 10px 14px;\n  border-radius: 10px;\n  overflow: hidden;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 82%, var(--pc) 8%);\n  clip-path: polygon(0 14px, 18px 0, 100% 0, 100% 100%, 0 100%);\n  border: 1px solid color-mix(in srgb, var(--pc) 30%, transparent);\n}\n.key-left { display: flex; gap: 10px; align-items: center; z-index: 1; max-width: 100%; }\n.key-name { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 35%, transparent); }\n.key-mini { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }\n.key-mini b { color: var(--ink); font-weight: 800; letter-spacing: 0; text-transform: none; }\n.key-score { position: relative; z-index: 1; text-align: center; margin-top: auto; pointer-events: none; }\n.key-score .prev {\n  display: block; font-size: 16px; font-weight: 700; color: var(--muted);\n  text-decoration: line-through; text-decoration-thickness: 2px; opacity: 0.75;\n}\n.key-score .now {\n  font-size: 72px; font-weight: 800; letter-spacing: -0.08em; line-height: 0.82;\n  font-variant-numeric: tabular-nums;\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 50%, transparent),\n    0 0 22px color-mix(in srgb, var(--pc) 28%, transparent);\n}\n.key-opp {\n  position: absolute; top: 0; right: 0; z-index: 2;\n  min-width: 88px; padding: 8px 12px 10px 28px;\n  clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%);\n  background: color-mix(in srgb, var(--card-background-color, #111) 70%, #000 30%);\n  border-left: 1px solid color-mix(in srgb, var(--primary-text-color, #fff) 12%, transparent);\n  text-align: right;\n}\n.key-opp span { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }\n.key-opp b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }\n.key-visit { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: stretch; }\n.turn-total {\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  border: 1px solid var(--line); border-radius: 8px;\n  box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 14%, transparent);\n}\n.turn-total small { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); text-align: center; padding: 0 2px; line-height: 1.2; }\n.turn-total b { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }\n.key-darts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }\n.key-dart {\n  min-height: 64px; border: 1px solid var(--line); border-radius: 8px;\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 70%, transparent);\n}\n.key-dart b { font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }\n.key-dart small { font-size: 11px; font-weight: 600; color: var(--muted); }\n.key-dart.on {\n  border-color: color-mix(in srgb, var(--pc) 50%, transparent);\n  box-shadow: 0 0 14px color-mix(in srgb, var(--pc) 22%, transparent);\n}\n.key-dart.on b { text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 45%, transparent); }\n.key-dart.empty { border-style: dashed; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }\n.key-bar {\n  display: flex; align-items: center; gap: 6px;\n  padding: 8px 4px 4px;\n  border-top: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  box-shadow: 0 -1px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 8%, transparent);\n}\n.key-turn {\n  flex: 1; text-align: center;\n  font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: none;\n  text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 40%, transparent);\n}\n.hitlbl b {\n  text-shadow: 0 0 12px color-mix(in srgb, var(--pc, var(--primary-color)) 35%, transparent);\n}\n\n/* Neon hairlines on key dividers */\n.section-h { border-bottom-color: color-mix(in srgb, var(--primary-color, var(--accent)) 22%, var(--line)); }\n\n@media (max-width: 1400px) {\n  .main { padding: 16px 24px 28px 20px; }\n  .game-omni { gap: 16px 24px; }\n  .pl-score { font-size: clamp(48px, 6vw, 80px); }\n}\n@media (max-width: 900px) {\n  .app {\n    min-height: 0;\n    height: auto;\n    overflow: visible;\n  }\n  .stage {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto auto;\n    grid-template-areas: \"top\" \"main\";\n    min-height: 0;\n    height: auto;\n    overflow: visible;\n  }\n  .rail { display: none; }\n  .stage > .top, .top {\n    display: grid;\n    grid-area: top;\n    grid-template-columns: 1fr auto;\n    grid-template-areas: \"brand status\" \"nav nav\";\n    gap: 4px 12px;\n    padding: 12px 16px 0;\n  }\n  .brand { grid-area: brand; padding-bottom: 4px; }\n  .nav { grid-area: nav; justify-content: space-between; width: 100%; gap: 0; }\n  .nav button { font-size: 11px; padding: 10px 2px 14px; letter-spacing: 0.02em; min-width: 0; flex: 1 1 0; }\n  .status { grid-area: status; padding-bottom: 4px; }\n  .main {\n    padding: 12px 16px 16px;\n    overflow: visible;\n    height: auto;\n    max-height: none;\n    min-height: 0;\n    scroll-padding-bottom: var(--arena-footer-clear);\n  }\n  .game-omni { display: none; }\n  .game-key { display: flex; flex-direction: column; gap: 12px; height: auto; overflow: visible; padding-bottom: var(--arena-footer-clear); }\n  .key-bar {\n    position: fixed;\n    left: 0;\n    right: 0;\n    bottom: 0;\n    z-index: 20;\n    background: color-mix(in srgb, var(--card-background-color, #16181e) 94%, #000 6%);\n    padding: 8px 12px max(12px, env(safe-area-inset-bottom, 0px));\n    margin: 0;\n    border-top: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  }\n  .key-board { max-height: none; overflow: hidden; }\n  .key-board .board-art { width: min(100%, calc(min(38vh, 300px) + 36px)); }\n  .key-board .board-art svg { width: 100%; height: auto; max-height: none; }\n  .key-bar, .play-actions { overflow: visible; }\n  .score { font-size: clamp(64px, 18vw, 96px); }\n  .pal { width: calc(50% - 4px); }\n  .wash-player, .wash-ring { opacity: 0.16; }\n}\n@media (max-height: 850px) and (min-width: 901px) {\n  .main { padding-top: 12px; padding-bottom: 16px; }\n  .pl-score { font-size: clamp(48px, 8vh, 84px); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .lights, .lights *, .wash, .edge, .rim-aura, .rim-glow, .who .name, .row.cur .nm, .row.cur::after, .score, .board-side svg,\n  .pl.cur, .halo-glow, .halo-ring, .key-halo, .key-hero-wrap.cur .key-halo,\n  .dart-pin-wrap.drop-in .dart-drop, .dart-card.just-landed, .key-dart.just-landed {\n    animation: none !important;\n    transition: none !important;\n  }\n  .lights.is-hit .wash-hit { opacity: 0.16; transform: translate(-50%, -50%) scale(1); }\n  .wash-player, .wash-ring, .wash-accent { transform: none; }\n  .pl.cur .halo-glow, .key-hero-wrap.cur .halo-glow {\n    background: radial-gradient(circle, color-mix(in srgb, var(--pc) 40%, transparent), transparent 70%);\n    filter: blur(16px);\n    opacity: 0.4;\n  }\n}\n\n.key-hero-wrap.idle .key-score { display: none; }\n.key-hero-wrap.idle .key-hero { min-height: 0; padding-bottom: 16px; }\n.row-main {\n  appearance: none; background: none; border: 0; color: inherit; font: inherit;\n  display: grid; grid-template-columns: 3px 1fr auto; gap: 16px; align-items: center;\n  width: 100%; text-align: left; cursor: pointer; padding: 0;\n}\n.roster .row { display: flex; align-items: center; gap: 8px; }\n.swatch-chip { width: 28px; height: 28px; border-radius: 4px; flex: 0 0 28px; }\n.badge strong:empty { display: none; }\n\nbutton.dart-card, button.key-dart {\n  appearance: none; color: inherit; font: inherit; padding: 0; cursor: pointer;\n  text-align: inherit; width: 100%;\n}\n.dart-card svg, .key-dart svg { pointer-events: none; }\n.dart-card.empty svg, .key-dart.empty svg { opacity: 0.55; }\n.dart-card .wait, .key-dart .wait {\n  letter-spacing: 0.04em; font-size: 11px; font-weight: 700; color: var(--muted);\n  width: 100%; text-align: center; text-transform: none;\n}\n.dart-card.just-landed, .key-dart.just-landed {\n  animation: cropPulse 0.9s ease-out 1;\n}\n.dart-card.focus, .key-dart.focus, .key-dart.latest, .dart-card.latest {\n  border-color: color-mix(in srgb, var(--pc) 70%, transparent);\n  box-shadow: 0 0 16px color-mix(in srgb, var(--pc) 26%, transparent);\n}\n@keyframes cropPulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pc) 48%, transparent); }\n  45% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--pc) 40%, transparent); }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n.key-darts .dart-card { min-height: 86px; }\n.key-darts .dart-card svg { height: 76px; width: 100%; display: block; background: #14161c; }\n.key-darts .dc-meta { width: 100%; padding: 4px 6px 6px; }\n.board-side.idle .rim-aura, .board-side.idle .rim-glow {\n  stroke: var(--board-glow, var(--accent-color, var(--primary-color)));\n}\n.dart-aura {\n  fill: var(--dc, var(--pc, var(--accent-color)));\n  opacity: 0.34;\n  filter: blur(2.3px);\n}\n.dart-flight {\n  fill: color-mix(in srgb, var(--dc, var(--pc, var(--accent-color))) 78%, #fff);\n  stroke: color-mix(in srgb, var(--dc, var(--pc)) 35%, #fff);\n  stroke-width: 0.25;\n  filter: drop-shadow(0 0 2.1px color-mix(in srgb, var(--dc, var(--pc)) 70%, transparent));\n}\n.dart-flight.back {\n  fill: color-mix(in srgb, var(--dc, var(--pc)) 50%, #1a1a1e);\n  opacity: 0.92;\n  filter: none;\n}\n.dart-barrel {\n  fill: color-mix(in srgb, var(--dc, var(--pc)) 28%, #d8dce3);\n  stroke: color-mix(in srgb, var(--ink, #111) 20%, #fff);\n  stroke-width: 0.2;\n}\n.dart-grip { fill: color-mix(in srgb, var(--dc, var(--pc)) 20%, #9aa0ab); }\n.dart-shaft { fill: #f3f5f8; }\n.dart-tip {\n  fill: #f7f8fb;\n  filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--dc, var(--pc)) 80%, transparent));\n}\n.dart-pin-wrap.drop-in .dart-drop {\n  animation: dartDrop 0.48s cubic-bezier(.2,.75,.25,1) both;\n  transform-box: fill-box;\n  transform-origin: center top;\n}\n@keyframes dartDrop {\n  0% { transform: translateY(-26px) scale(1.16); opacity: 0; }\n  72% { transform: translateY(1.4px) scale(1); opacity: 1; }\n  100% { transform: translateY(0) scale(1); opacity: 1; }\n}\n.dart-pin-wrap.is-focus .dart-aura { opacity: 0.55; }\n.dart-pin-wrap.is-focus .dart-pin {\n  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dc, var(--pc)) 75%, transparent));\n}\n\n.lights, .lights *, .wash, .edge, .edge i, .halo, .key-halo, .halo-wrap, .halo-glow, .halo-ring,\n.row.cur::after, .rim-aura, .rim-glow,\n.dart-pin-wrap, .dart-drop, .dart-pin, .heat-layer, .scatter-layer {\n  pointer-events: none !important;\n}\nbutton, input, select, textarea, a, .dart-card, .key-dart, .row-main, .toggle, .swatch, .pal, .nav button, .rail-nav button {\n  pointer-events: auto;\n  touch-action: manipulation;\n}\n.modal-bg { pointer-events: auto; }\n\n.offline-badge {\n  display: inline-block;\n  margin-left: 8px;\n  padding: 2px 8px;\n  font-size: 10px;\n  font-weight: 700;\n  letter-spacing: 0.06em;\n  color: var(--muted, #b4b8c2);\n  border: 1px solid color-mix(in srgb, var(--primary-text-color, #fff) 22%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 60%, transparent);\n  vertical-align: middle;\n}\n.status .dot.off { background: var(--muted, #b4b8c2); }\n\n.lights, .lights *, .wash, .edge, .rim-aura, .rim-glow, .key-halo, .halo-wrap, .halo-glow, .halo-ring, .who .halo {\n  pointer-events: none !important;\n}\n.nav, .rail-nav, .nav button, .rail-nav button, .play-actions, .modes, .section, .section-h {\n  position: relative;\n  z-index: 2;\n}\n\n@media (max-width: 900px) {\n  .key-bar {\n    position: fixed !important;\n    left: 0;\n    right: 0;\n    bottom: 0;\n    z-index: 20 !important;\n  }\n}\n\n/* data-act pointer fix: designed controls must receive taps. Do not cover them. */\nbutton, .swatch, .pal, .toggle, input[type=\"range\"], input[type=\"text\"], [data-act], [data-act-change], [data-act-blur], [data-act-key] {\n  pointer-events: auto !important;\n  touch-action: manipulation;\n  cursor: pointer;\n}\ninput[type=\"range\"], input[type=\"text\"] { cursor: auto; }\ninput[type=\"range\"] { cursor: pointer; }\n\n\n@media (max-width: 900px) {\n  .stage > .top, .top {\n    position: sticky;\n    top: 0;\n    z-index: 15;\n    background: color-mix(in srgb, var(--card-background-color, #16181e) 94%, #000 6%);\n  }\n  .key-visit, .key-darts, .dart-card, .key-dart, .dart-tray, .key-hero-wrap {\n    position: relative;\n    z-index: 3;\n  }\n  .key-board { position: relative; z-index: 0; overflow: hidden; }\n}\n\n/* Room WLED units */\n.wled-unit { margin-top: 8px; }\n.wled-h {\n  display: flex; align-items: center; justify-content: space-between; gap: 12px;\n  padding: 8px 0 10px; border-bottom: 1px solid var(--line);\n}\n.wled-name {\n  appearance: none; background: transparent; border: 0; color: inherit;\n  font: inherit; display: inline-flex; align-items: center; gap: 8px;\n  cursor: pointer; padding: 0; margin: 0;\n  font-size: 13px; font-weight: 650; letter-spacing: 0.08em;\n}\n.wled-name svg { width: 16px; height: 16px; flex: 0 0 16px; transition: transform var(--ease); }\n.wled-unit:not(.open) .wled-name svg { transform: rotate(-90deg); }\n.wled-unit:not(.open) .wled-body { display: none; }\n.wled-body { padding-top: 12px; }\n\n.halo-wrap, .key-halo, .halo-glow, .halo-ring { display: none !important; }\n\n.glow-swatch {\n  display: block; width: 22px; height: 22px; border-radius: 50%;\n  box-shadow: 0 0 8px color-mix(in srgb, currentColor 35%, transparent);\n  flex: 0 0 22px;\n}\n.glow-row .icon-tile { min-width: 56px; }\n";
+const DARTS_ARENA_CSS = "\n:host {\n  display: block;\n  height: auto !important;\n  max-height: none !important;\n  overflow: visible;\n  overscroll-behavior: auto;\n  --arena-footer-clear: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);\n  scroll-padding-bottom: var(--arena-footer-clear);\n  background: transparent;\n}\n@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');\n\n:host, ha-card, #container, #app, #darts-app, .app {\n  --ink: var(--primary-text-color, #f3f4f7);\n  --muted: var(--secondary-text-color, #b4b8c2);\n  --accent: var(--primary-color, #5dade2);\n  --line: color-mix(in srgb, var(--primary-text-color, #fff) 18%, transparent);\n  --line-strong: color-mix(in srgb, var(--primary-text-color, #fff) 32%, transparent);\n  --fade: color-mix(in srgb, var(--primary-text-color, #fff) 6%, transparent);\n  --danger: #ff6b6b;\n  --ok: #3dd68c;\n  --warn: #ffd166;\n  --font: \"Outfit\", Inter, \"Segoe UI\", system-ui, sans-serif;\n  --ease: 180ms cubic-bezier(.2,.7,.2,1);\n  --arena-footer-clear: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);\n  font-family: var(--font);\n  color: var(--ink);\n  box-sizing: border-box;\n}\n*, *::before, *::after { box-sizing: border-box; }\n#app, .app { width: 100%; }\n:host, ha-card {\n  position: relative;\n  display: block;\n  height: auto !important;\n  max-height: none !important;\n  overflow: visible;\n  overscroll-behavior: auto;\n  scroll-padding-bottom: var(--arena-footer-clear);\n  background: transparent;\n  border: none !important;\n  box-shadow: none !important;\n}\n[hidden], [data-section][hidden] { display: none !important; }\n/* Overlay tap targets must never take layout space or paint as empty cards. */\n[id^=\"ov_\"] {\n  position: absolute !important;\n  background: transparent !important;\n  box-shadow: none !important;\n  border: none !important;\n  overflow: hidden !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  opacity: 0 !important;\n}\n.app {\n  --pc: var(--accent);\n  --ring: var(--accent);\n  --hit: var(--accent);\n  --bri: 0.7;\n  --fx-dur: 8s;\n  --neon: color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 70%, #fff 30%);\n  position: relative;\n  isolation: isolate;\n  min-height: 0;\n  height: auto;\n  padding: 0;\n  max-width: none;\n  margin: 0;\n  width: 100%;\n  overflow: visible;\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 72%, #000 28%);\n}\n@media (min-width: 901px) {\n  .app { min-height: 100%; }\n}\n.stage {\n  position: relative;\n  z-index: 1;\n  display: grid;\n  grid-template-columns: 92px minmax(0, 1fr);\n  grid-template-rows: minmax(0, 1fr);\n  grid-template-areas: \"rail main\";\n  min-height: inherit;\n}\n.main { min-width: 0; padding: 18px 36px 40px 28px; overflow: auto; }\n.rail { display: flex; }\n.top { display: none; }\na { color: inherit; }\nbutton, input, select { font: inherit; color: inherit; }\n.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }\n\n/* Top bar */\n.top {\n  grid-template-columns: auto 1fr auto;\n  align-items: end;\n  gap: 24px;\n  padding-bottom: 0;\n  border-bottom: 1px solid var(--line);\n}\n.stage > .top { display: none; }\n.stage > .rail { grid-area: rail; }\n.stage > .main { grid-area: main; }\n.stage {\n  grid-template-areas: \"rail main\";\n}\n.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; padding-bottom: 16px; }\n.brand svg { width: 22px; height: 22px; flex: 0 0 22px; translate: 0 1px; }\n.brand .name { font-size: 22px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }\n.brand .tag { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-transform: none; }\n.nav { display: flex; justify-content: center; gap: 4px 22px; flex-wrap: wrap; }\n.nav button {\n  appearance: none; background: none; border: 0; padding: 8px 0 16px;\n  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;\n  color: var(--muted); cursor: pointer; position: relative;\n  border-radius: 0; transition: color var(--ease);\n}\n.nav button:hover { color: var(--ink); }\n.nav button.on { color: var(--ink); }\n.nav button.on::after {\n  content: \"\"; position: absolute; left: 0; right: 0; bottom: -1px;\n  height: 2px; background: var(--ink);\n}\n.status { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--muted); padding-bottom: 16px; white-space: nowrap; }\n.status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }\n.status .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }\n.status .dot.wait { background: var(--warn); animation: pulse 1.6s ease-in-out infinite; }\n@keyframes pulse { 50% { opacity: .35 } }\n\n/* Type */\n.kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--muted); }\n.display { font-weight: 800; letter-spacing: -0.05em; line-height: 0.92; font-variant-numeric: tabular-nums; }\n.title { font-size: clamp(28px, 3.2vw, 42px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.05; }\n.lede { color: var(--muted); font-size: 14px; font-weight: 500; }\n.section { margin-top: 48px; }\n.section-h { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }\n.section-h h2 { margin: 0; font-size: 13px; font-weight: 650; letter-spacing: 0.08em; }\n\n/* Buttons \u2014 ghost / outline, never pills */\n.btn {\n  appearance: none; background: transparent;\n  border: 1px solid var(--line-strong);\n  border-radius: 8px;\n  padding: 10px 16px;\n  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;\n  color: var(--ink); cursor: pointer;\n  display: inline-flex; align-items: center; gap: 8px;\n  transition: border-color var(--ease), background var(--ease), color var(--ease), transform var(--ease);\n}\n.btn svg { width: 16px; height: 16px; flex: 0 0 16px; }\n.btn:hover { border-color: color-mix(in srgb, var(--ink) 40%, transparent); background: var(--fade); }\n.btn:active { transform: translateY(1px); }\n.btn.quiet { border-color: transparent; padding-left: 8px; padding-right: 8px; color: var(--muted); }\n.btn:not(.quiet) { text-decoration: none; }\n.fx .btn:not(.quiet), .modes .btn:not(.quiet) { box-shadow: inset 0 -2px 0 var(--ink); border-color: transparent; border-radius: 0; padding-left: 4px; padding-right: 4px; }\n.btn.quiet:hover { color: var(--ink); background: transparent; border-color: transparent; }\n.btn.warn:hover { border-color: var(--danger); color: var(--danger); background: transparent; }\n.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }\n.modes {\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));\n  gap: 4px 6px;\n  width: 100%;\n  overflow: visible;\n}\n.icon-row, .fx, .preset-row, .theme-row {\n  display: flex;\n  flex-wrap: nowrap;\n  gap: 4px 8px;\n  overflow-x: auto;\n  overflow-y: hidden;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: thin;\n  padding: 2px 0 8px;\n}\n.mode-tile, .icon-tile {\n  appearance: none;\n  background: transparent;\n  border: 0;\n  border-radius: 0;\n  box-shadow: none;\n  padding: 8px 4px 6px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  color: var(--muted);\n  cursor: pointer;\n  min-width: 0;\n  flex: 0 0 auto;\n  transition: color var(--ease), transform var(--ease), filter var(--ease);\n}\n.modes .mode-tile { width: 100%; min-width: 0; }\n.icon-tile { min-width: 64px; max-width: 88px; }\n.mode-tile svg, .icon-tile svg { width: 28px; height: 28px; display: block; flex: 0 0 28px; }\n.mode-label, .icon-label {\n  font-size: 10px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n  text-align: center;\n  line-height: 1.2;\n  color: inherit;\n  max-width: 100%;\n}\n.mode-tile:hover, .icon-tile:hover,\n.mode-tile:focus-visible, .icon-tile:focus-visible {\n  color: var(--ink);\n  background: transparent;\n}\n.mode-tile:hover svg, .icon-tile:hover svg,\n.mode-tile:focus-visible svg, .icon-tile:focus-visible svg {\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent, var(--primary-color)) 55%, transparent));\n}\n.mode-tile:hover .mode-label, .icon-tile:hover .icon-label,\n.mode-tile:focus-visible .mode-label, .icon-tile:focus-visible .icon-label {\n  text-shadow: 0 0 8px color-mix(in srgb, var(--accent, var(--primary-color)) 40%, transparent);\n}\n.mode-tile:active, .icon-tile:active { transform: translateY(1px); background: transparent; }\n.icon-tile.on, .mode-tile.on { color: var(--ink); background: transparent; }\n.icon-tile.on svg, .mode-tile.on svg {\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent, var(--primary-color)) 50%, transparent));\n}\n.icon-tile.on .icon-label, .mode-tile.on .mode-label {\n  box-shadow: inset 0 -2px 0 var(--ink);\n  text-shadow: 0 0 8px color-mix(in srgb, var(--accent, var(--primary-color)) 35%, transparent);\n}\n\n\n/* Game */\n.game { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 40px 64px; padding-top: 36px; align-items: start; }\n.hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 28px; }\n.score {\n  font-size: clamp(72px, 11vw, 152px); font-weight: 800; letter-spacing: -0.06em; line-height: 0.88;\n  font-variant-numeric: tabular-nums;\n  background-image: linear-gradient(\n    105deg,\n    #ffffff 0%,\n    #ffffff 36%,\n    color-mix(in srgb, var(--pc) 55%, #fff) 50%,\n    #ffffff 64%,\n    #f2f3f7 100%\n  );\n  background-size: 220% 100%;\n  background-position: 40% 0;\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--pc) 40%, transparent));\n  animation: scoreSheen 6s ease-in-out infinite;\n}\n@keyframes scoreSheen {\n  0%, 16% { background-position: 120% 0; }\n  58%, 100% { background-position: -20% 0; }\n}\n.score.idle { font-size: clamp(40px, 6vw, 64px); font-weight: 500; opacity: 0.35; letter-spacing: -0.02em; }\n.who { margin-top: 4px; }\n.who .name {\n  color: var(--pc, var(--ink));\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 85%, #fff),\n    0 0 20px var(--pc),\n    0 0 42px color-mix(in srgb, var(--pc) 65%, transparent);\n  animation: nameBreathe 2.8s ease-in-out infinite;\n}\n.meta-row { display: flex; gap: 20px; margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }\n.tray { margin-top: 36px; }\n.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 12px; }\n.slot {\n  min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;\n  border: 1px dashed color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 8px; background: transparent;\n}\n.slot.on { border-style: solid; }\n.slot span { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }\n.slot small { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }\n.slot.r-treble { border-bottom: 2px solid #e5484d; }\n.slot.r-double, .slot.r-bull { border-bottom: 2px solid #3dd68c; }\n.slot.r-bullseye { border-bottom: 2px solid #e5484d; }\n.slot.pop { animation: pop .45s cubic-bezier(.2,1.4,.4,1); }\n@keyframes pop { 0%{transform:scale(.92);opacity:0} 100%{transform:scale(1);opacity:1} }\n.roster { margin-top: 40px; }\n.row {\n  display: grid; grid-template-columns: 3px 1fr auto; gap: 16px; align-items: center;\n  padding: 14px 0; border-bottom: 1px solid var(--line);\n  position: relative;\n  opacity: 1;\n  transition: opacity 0.65s ease, filter 0.65s ease;\n}\n.row:first-child { border-top: 1px solid var(--line); }\n.app.is-play .row:not(.cur) { opacity: 0.42; filter: saturate(0.75); }\n.row .bar { align-self: stretch; background: var(--pc); transition: box-shadow 0.65s ease, background 0.65s ease; }\n.row .nm {\n  font-size: 18px; font-weight: 650; letter-spacing: -0.02em;\n  transition: color 0.65s ease, text-shadow 0.65s ease;\n}\n.row .sub { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }\n.row .pts {\n  font-size: 28px; font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums;\n  transition: font-size 0.45s ease, color 0.65s ease, text-shadow 0.65s ease, filter 0.65s ease;\n}\n.row.cur .nm {\n  color: var(--pc);\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 85%, #fff),\n    0 0 20px var(--pc),\n    0 0 42px color-mix(in srgb, var(--pc) 65%, transparent);\n  animation: nameBreathe 2.8s ease-in-out infinite;\n}\n.row.cur .pts {\n  font-size: 32px;\n  text-shadow: 0 0 16px color-mix(in srgb, var(--pc) 45%, transparent);\n}\n.row.cur .bar {\n  box-shadow: 0 0 8px var(--pc), 0 0 18px color-mix(in srgb, var(--pc) 80%, transparent);\n}\n.row.cur::after {\n  content: \"\";\n  position: absolute;\n  left: 19px; right: 0; bottom: -1px;\n  height: 2px;\n  background: linear-gradient(90deg, transparent, var(--pc), #fff, var(--pc), transparent);\n  background-size: 200% 100%;\n  box-shadow: 0 0 12px var(--pc);\n  animation: underGlow 3.2s ease-in-out infinite;\n  pointer-events: none;\n}\n@keyframes nameBreathe {\n  0%, 100% { filter: brightness(1); }\n  50% { filter: brightness(1.22); }\n}\n@keyframes underGlow {\n  0%, 100% { background-position: 0% 50%; opacity: 0.72; }\n  50% { background-position: 100% 50%; opacity: 1; }\n}\n.co { margin-top: 24px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }\n.co .lbl { display: block; font-size: 11px; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }\n.co b { font-weight: 700; }\n.co i { font-style: normal; color: var(--muted); margin: 0 8px; font-weight: 500; }\n.banner { margin-top: 20px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }\n.banner.win { color: #ffd54a; }\n.banner.bust { color: var(--danger); }\n.banner.next { font-size: 14px; font-weight: 600; color: var(--muted); }\n.board-side { position: relative; text-align: center; overflow: hidden; --board-glow: var(--pc, var(--primary-color, #5dade2)); --board-glow-a: 0.55; }\n.board-art {\n  position: relative;\n  display: block;\n  width: min(100%, calc(62vh + 36px));\n  max-width: 100%;\n  margin: 0 auto;\n  padding: 18px;\n  box-sizing: border-box;\n  overflow: hidden;\n  border-radius: 50%;\n  z-index: 0;\n  isolation: isolate;\n  pointer-events: none;\n}\n.board-art svg {\n  position: relative; z-index: 1;\n  display: block;\n  width: 100%;\n  height: auto;\n  aspect-ratio: 1 / 1;\n  overflow: visible;\n  pointer-events: auto;\n  filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--ink) 10%, transparent));\n}\n/* Soft 8-zone rim ring: at most 18px past the board, faded, restrained neon */\n.board-glow-bloom {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  pointer-events: none;\n  z-index: 0;\n  --z0: var(--board-glow);\n  --z1: var(--board-glow);\n  --z2: var(--board-glow);\n  --z3: var(--board-glow);\n  --z4: var(--board-glow);\n  --z5: var(--board-glow);\n  --z6: var(--board-glow);\n  --z7: var(--board-glow);\n  background: conic-gradient(from -22.5deg,\n    var(--z0), var(--z1), var(--z2), var(--z3),\n    var(--z4), var(--z5), var(--z6), var(--z7), var(--z0));\n  filter: blur(8px) saturate(1.12);\n  opacity: var(--board-glow-a, 0.55);\n  transition: opacity 1.5s ease, filter 0.8s linear;\n  transform-origin: center center;\n  -webkit-mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n  mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n}\n.board-side.glow-breathe .board-glow-bloom {\n  animation: boardGlowBreathe var(--board-glow-dur, 5.6s) ease-in-out infinite;\n}\n.board-side.glow-blink .board-glow-bloom {\n  animation: boardGlowBlink var(--board-glow-dur, 1.2s) linear infinite;\n}\n.board-side.glow-heartbeat .board-glow-bloom {\n  animation: boardGlowHeartbeat var(--board-glow-dur, 1.7s) linear infinite;\n}\n@keyframes boardGlowBreathe {\n  0%, 100% { opacity: var(--glow-floor, 0.3); }\n  50% { opacity: var(--board-glow-a, 0.95); }\n}\n@keyframes boardGlowBlink {\n  0%, 45% { opacity: var(--board-glow-a, 0.9); }\n  50%, 95% { opacity: 0.06; }\n  100% { opacity: var(--board-glow-a, 0.9); }\n}\n@keyframes boardGlowHeartbeat {\n  0%, 8% { opacity: var(--board-glow-a, 0.95); }\n  14% { opacity: 0.18; }\n  22% { opacity: var(--board-glow-a, 0.95); }\n  30%, 100% { opacity: 0.16; }\n}\n.board-side.glow-rainbow .board-glow-prism {\n  animation-duration: var(--board-glow-dur, 18s);\n}\n/* Rainbow rim: same 18px hug as the bloom, never a disc, never past the art clip */\n.board-glow-rainbow-clip {\n  display: none;\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  overflow: hidden;\n  pointer-events: none;\n  z-index: 0;\n  contain: paint;\n  -webkit-mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n  mask-image: radial-gradient(circle closest-side, transparent 86%, #000 90%, #000 94%, transparent 100%);\n}\n.board-glow-prism {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  background: conic-gradient(#ff2a6d, #ff8a00, #ffe600, #2bff88, #00d5ff, #2f6bff, #8a2bff, #ff2ad0, #ff2a6d);\n  filter: blur(8px) saturate(1.12);\n  opacity: 0.55;\n  will-change: transform;\n  contain: paint;\n  pointer-events: none;\n  animation: boardGlowSpin 18s linear infinite;\n}\n@keyframes boardGlowSpin {\n  from { transform: translateZ(0) rotate(0deg); }\n  to { transform: translateZ(0) rotate(360deg); }\n}\n.board-side.glow-rainbow .board-glow-rainbow-clip { display: block; }\n.board-side.glow-rainbow .board-glow-bloom {\n  will-change: transform;\n  animation: boardGlowOrbit var(--board-glow-dur, 18s) linear infinite;\n}\n@keyframes boardGlowOrbit {\n  from { transform: rotate(0deg); }\n  to { transform: rotate(360deg); }\n}\n.board-side.glow-off .board-glow-bloom { opacity: 0; }\n.board-side.glow-off .board-glow-rainbow-clip { display: none; }\n.rim-aura {\n  fill: none; stroke: var(--pc); stroke-width: 14;\n  opacity: 0.22; filter: blur(6px);\n}\n.rim-glow {\n  fill: none; stroke: var(--pc); stroke-width: 3.2;\n  opacity: 0.9; filter: blur(0.6px);\n}\n.ring-outer { fill: color-mix(in srgb, var(--ink) 8%, #111); }\n.ring-bevel { fill: none; stroke: color-mix(in srgb, var(--ink) 22%, #8a7350); stroke-width: 10; }\n.nums text { fill: #f3f4f7; font-size: 20px; font-weight: 600; text-anchor: middle; font-family: sans-serif; }\n.wires { stroke: color-mix(in srgb, var(--ink) 20%, transparent); stroke-width: .6; fill: none; }\n.hit { fill: var(--pc, var(--accent)); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 10px var(--pc, var(--accent))); animation: hitFade 20s ease-out forwards; }\n.hit.flash { animation: flash 1.1s ease-out, hitFade 20s ease-out forwards; }\n.burst { fill: none; stroke: #fff; stroke-width: 3; animation: burst .9s ease-out forwards; opacity: 0; }\n.hitlbl { position: relative; z-index: 2; margin-top: 8px; }\n.hitlbl b { display: block; font-size: clamp(28px, 4vh, 48px); font-weight: 800; letter-spacing: -0.04em; }\n.hitlbl span { display: block; margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--muted); }\n@keyframes flash { 0%,30%,60%{opacity:1;fill:#fff} 15%,45%{opacity:.35;fill:var(--pc)} 100%{opacity:.9} }\n@keyframes hitFade { 0%,92.5%{opacity:.9} 100%{opacity:0} }\n@keyframes burst { 0%{transform:scale(.4);opacity:1} 100%{transform:scale(8);opacity:0} }\n.play-actions { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); }\n.cr { display: grid; gap: 0; margin-top: 8px; text-align: center; }\n.cr .ch { font-size: 11px; font-weight: 650; color: var(--muted); padding: 8px 4px; }\n.cr .ct { font-weight: 700; font-size: 14px; padding: 8px 4px; border-top: 1px solid var(--line); }\n.cr .ct.closed { opacity: .35; text-decoration: line-through; }\n.cr .cm { height: 36px; display: flex; align-items: center; justify-content: center; border-top: 1px solid var(--line); }\n.cr .cm svg { width: 18px; height: 18px; fill: none; stroke: var(--pc, var(--accent)); stroke-width: 2.2; stroke-linecap: round; }\n\n/* Forms & pickers */\n.field { display: grid; gap: 8px; margin: 16px 0; }\n.field label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }\n.field input[type=text], .field select {\n  background: transparent; border: 0; border-bottom: 1px solid var(--line);\n  border-radius: 0; padding: 10px 0; outline: none; font-size: 16px; font-weight: 500;\n}\n.field input[type=text]:focus, .field select:focus { border-bottom-color: var(--ink); }\n.toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); cursor: pointer; }\n.toggle span { font-size: 15px; font-weight: 600; }\n.toggle i {\n  width: 36px; height: 20px; border: 1px solid var(--line); border-radius: 8px; position: relative; display: inline-block;\n}\n.toggle i::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 3px; transition: transform var(--ease), background var(--ease); }\n.toggle.on i { border-color: var(--ink); }\n.toggle.on i::after { transform: translateX(16px); background: var(--ink); }\n\n.swatches, .palettes, .fx { display: flex; flex-wrap: wrap; gap: 8px; }\n.swatch {\n  width: 32px; height: 32px; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);\n  border-radius: 8px; cursor: pointer; padding: 0; background: center/cover no-repeat;\n  transition: transform var(--ease), outline-color var(--ease);\n}\n.swatch:hover { transform: translateY(-1px); }\n.swatch.on { outline: 2px solid var(--ink); outline-offset: 3px; }\n.pal {\n  width: 148px; height: 64px; border: 0; border-radius: 6px; cursor: pointer;\n  padding: 0 10px 8px; display: flex; align-items: flex-end;\n  font-size: 11px; font-weight: 650; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7);\n  text-align: left; overflow: hidden; position: relative;\n}\n.pal.on { outline: 2px solid var(--ink); outline-offset: 3px; }\n.fx button { }\n.range { display: grid; gap: 8px; margin: 20px 0; }\n.range label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }\n.range input[type=range] {\n  appearance: none; height: 16px; background: transparent; border-radius: 0; outline: none; width: 100%;\n  margin: 0; padding: 0;\n}\n.range input[type=range]::-webkit-slider-runnable-track {\n  height: 2px; background: color-mix(in srgb, var(--ink) 40%, transparent); border-radius: 0;\n}\n.range input[type=range]::-webkit-slider-thumb {\n  appearance: none; width: 14px; height: 14px; border-radius: 2px; background: var(--ink); border: 0; cursor: pointer;\n  margin-top: -6px;\n}\n.range input[type=range]::-moz-range-track {\n  height: 2px; background: color-mix(in srgb, var(--ink) 40%, transparent); border: 0;\n}\n.range input[type=range]::-moz-range-thumb {\n  width: 14px; height: 14px; border-radius: 2px; background: var(--ink); border: 0; cursor: pointer;\n}\n.def { display: grid; grid-template-columns: 180px 1fr; gap: 8px 24px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }\n.def dt { font-weight: 600; color: var(--muted); }\n.def dd { margin: 0; font-weight: 600; }\n.note { margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--muted); max-width: 52ch; line-height: 1.5; }\n\n/* Modal */\n.modal-bg { position: fixed; inset: 0; background: color-mix(in srgb, #000 40%, transparent); display: flex; align-items: center; justify-content: center; z-index: 20; }\n.modal { background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 88%, #fff 12%); padding: 28px 32px; max-width: 420px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 8px; }\n.modal p { margin: 0 0 20px; font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }\n\n\n/* Active lighting \u2014 Dynaframe-style edge blooms and color washes */\n.lights, .halo-wrap, .key-halo { display: none !important; }\n.edge {\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n}\n.edge i {\n  position: absolute;\n  display: block;\n  pointer-events: none;\n  will-change: box-shadow;\n  transition: box-shadow 0.2s linear;\n}\n.edge .t0 { left: 0; top: 0; width: 34%; height: 2px; box-shadow: var(--z0); }\n.edge .t1 { left: 33%; top: 0; width: 34%; height: 2px; box-shadow: var(--z1); }\n.edge .t2 { left: 66%; top: 0; width: 34%; height: 2px; box-shadow: var(--z2); }\n.edge .r0 { right: 0; top: 0; width: 2px; height: 34%; box-shadow: var(--z2); }\n.edge .r1 { right: 0; top: 33%; width: 2px; height: 34%; box-shadow: var(--z3); }\n.edge .r2 { right: 0; top: 66%; width: 2px; height: 34%; box-shadow: var(--z4); }\n.edge .b2 { left: 66%; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z4); }\n.edge .b1 { left: 33%; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z5); }\n.edge .b0 { left: 0; bottom: 0; width: 34%; height: 2px; box-shadow: var(--z6); }\n.edge .l2 { left: 0; top: 66%; width: 2px; height: 34%; box-shadow: var(--z6); }\n.edge .l1 { left: 0; top: 33%; width: 2px; height: 34%; box-shadow: var(--z7); }\n.edge .l0 { left: 0; top: 0; width: 2px; height: 34%; box-shadow: var(--z0); }\n\n\n/* Left rail (TV / tablet) */\n.rail {\n  flex-direction: column;\n  align-items: center;\n  gap: 16px;\n  padding: 20px 8px 24px;\n  border-right: 1px solid var(--line);\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 55%, transparent);\n  min-height: 0;\n  overflow: hidden;\n}\n.rail-av {\n  width: 44px; height: 44px; border-radius: 50%;\n  display: grid; place-items: center;\n  border: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 45%, transparent);\n  box-shadow: 0 0 12px color-mix(in srgb, var(--primary-color, var(--accent)) 28%, transparent);\n  color: var(--ink);\n}\n.rail-av svg { width: 22px; height: 22px; }\n.rail-nav {\n  display: flex; flex-direction: column; gap: 2px; width: 100%; flex: 1;\n}\n.rail-nav button {\n  appearance: none; background: none; border: 0; border-radius: 0;\n  display: flex; flex-direction: column; align-items: center; gap: 4px;\n  padding: 10px 4px; color: var(--muted); cursor: pointer;\n  font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;\n  position: relative; transition: color var(--ease);\n}\n.rail-nav button svg { width: 18px; height: 18px; }\n.rail-nav button:hover { color: var(--ink); }\n.rail-nav button.on { color: var(--ink); }\n.rail-nav button.on::before {\n  content: \"\"; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px;\n  background: var(--neon, var(--ink));\n  box-shadow: 0 0 8px color-mix(in srgb, var(--primary-color, var(--accent)) 55%, transparent);\n}\n.rail .status { writing-mode: horizontal-tb; flex-direction: column; text-align: center; white-space: normal; padding: 0; font-size: 9px; letter-spacing: 0.04em; line-height: 1.3; }\n\n/* Omni game (TV / tablet) */\n.game-omni {\n  display: grid;\n  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);\n  gap: 20px 36px;\n  align-items: start;\n}\n.omni-left { min-width: 0; display: flex; flex-direction: column; gap: 16px; }\n.omni-board { min-width: 0; }\n.game-key { display: none; }\n\n.match {\n  display: grid;\n  grid-template-columns: auto 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 10px 4px 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  box-shadow: 0 1px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 8%, transparent);\n}\n.match-mid { text-align: center; min-width: 0; }\n.match-title { font-size: clamp(22px, 2.4vw, 32px); font-weight: 800; letter-spacing: -0.05em; line-height: 1; }\n.match-sub { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }\n.chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }\n.chips span {\n  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;\n  padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--muted);\n}\n.legs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }\n.legs button {\n  appearance: none; background: none; border: 0; border-radius: 0; cursor: pointer;\n  padding: 8px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;\n  color: var(--muted);\n}\n.legs button.on {\n  color: var(--ink);\n  box-shadow: inset 0 -2px 0 var(--neon, var(--ink)), 0 4px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 18%, transparent);\n}\n\n.avatar {\n  width: 44px; height: 44px; border-radius: 50%;\n  display: grid; place-items: center;\n  font-size: 16px; font-weight: 800; letter-spacing: -0.03em;\n  color: var(--ink);\n  border: 2px solid var(--pc, var(--primary-color, var(--accent)));\n  background: color-mix(in srgb, var(--pc, var(--primary-color)) 16%, transparent);\n  transition: box-shadow 0.65s ease, border-color 0.65s ease;\n}\n.avatar.on {\n  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 40%, transparent), 0 0 14px color-mix(in srgb, var(--pc) 45%, transparent);\n}\n\n.score-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; }\n.score-row.multi { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }\n\n.pl {\n  position: relative;\n  isolation: isolate;\n  padding: 16px 16px 18px;\n  border: 1px solid var(--line);\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 78%, transparent);\n  opacity: 1;\n  transition: opacity 0.65s ease, filter 0.65s ease, border-color 0.65s ease;\n}\n.app.is-play .pl:not(.cur) { opacity: 0.5; filter: saturate(0.8); }\n.pl-head { display: flex; align-items: center; gap: 10px; }\n.pl-name { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }\n.pl-score {\n  margin-top: 8px;\n  font-size: clamp(56px, 7vw, 96px);\n  font-weight: 800; letter-spacing: -0.07em; line-height: 0.9;\n  font-variant-numeric: tabular-nums;\n}\n.pl-score.idle { display: none; }\n.pl.cur .pl-score {\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 50%, transparent),\n    0 0 22px color-mix(in srgb, var(--pc) 28%, transparent);\n}\n.pl.cur .pl-name {\n  color: var(--pc);\n  text-shadow: 0 0 12px color-mix(in srgb, var(--pc) 40%, transparent);\n}\n.pl-stats { margin: 12px 0 0; display: grid; gap: 6px; }\n.pl-stats div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 6px; }\n.pl-stats dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }\n.pl-stats dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }\n\n.your-turn {\n  margin-top: 10px;\n  padding: 7px 10px;\n  font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: none; text-align: center;\n  color: var(--ink);\n  border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent);\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--pc) 16%, transparent);\n  text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 40%, transparent);\n  box-shadow: 0 0 14px color-mix(in srgb, var(--pc) 22%, transparent);\n}\n\n/* Static, edge-contained soft neon glow. No rotation, no conic square, no continuous animation. */\n.pl, .key-hero-wrap { overflow: hidden; }\n.pl > .pl-head, .pl > .your-turn, .pl > .pl-score, .pl > .pl-stats,\n.key-hero-wrap > .key-hero { position: relative; z-index: 1; }\n.halo-wrap {\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  overflow: hidden;\n  border-radius: inherit;\n  pointer-events: none !important;\n  contain: strict;\n  z-index: 0;\n  transform: translateZ(0);\n}\n.pl .halo-wrap { border-radius: 10px; }\n.key-halo { border-radius: 18px; }\n.pl:not(.cur) .halo-wrap,\n.key-hero-wrap:not(.cur) .key-halo { display: none; }\n.halo-glow,\n.halo-ring {\n  position: absolute;\n  pointer-events: none !important;\n  animation: none;\n  will-change: auto;\n}\n.halo-glow {\n  inset: 0;\n  border-radius: inherit;\n  background:\n    radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 38%, transparent), transparent 70%),\n    radial-gradient(ellipse 70% 60% at 0% 80%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 18%, transparent), transparent 68%),\n    radial-gradient(ellipse 70% 60% at 100% 80%, color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 16%, transparent), transparent 68%);\n  opacity: 0.7;\n}\n.halo-ring {\n  inset: 0;\n  border-radius: inherit;\n  background: none;\n  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc, var(--primary-color, #5dade2)) 40%, transparent);\n  opacity: 0.9;\n}\n.pl.cur { border-color: color-mix(in srgb, var(--pc) 35%, transparent); }\n\n.badge {\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  min-width: 88px; padding: 10px 12px; text-align: center;\n  border: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 28%, transparent);\n  border-radius: 10px;\n  box-shadow: 0 0 16px color-mix(in srgb, var(--primary-color, var(--accent)) 12%, transparent);\n}\n.badge-k, .badge-g { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }\n.badge strong { font-size: 36px; font-weight: 800; letter-spacing: -0.06em; line-height: 1; margin: 4px 0; }\n\n.dart-tray .kicker { margin-bottom: 8px; }\n.dart-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }\n.dart-card {\n  border: 1px solid var(--line);\n  border-radius: 8px;\n  overflow: hidden;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 70%, transparent);\n  min-height: 86px;\n  display: flex; flex-direction: column;\n}\n.dart-card svg { display: block; width: 100%; height: 70px; background: #14161c; }\n.dart-card .dc-meta { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 8px 8px; }\n.dart-card .dc-meta b { font-size: 16px; font-weight: 800; letter-spacing: -0.03em; }\n.dart-card .dc-meta span { font-size: 12px; font-weight: 700; color: var(--muted); }\n.dart-card.empty { align-items: center; justify-content: center; border-style: dashed; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }\n.crop-dot { fill: #fff; stroke: var(--pc, #fff); stroke-width: 2; filter: drop-shadow(0 0 5px var(--pc, #fff)); }\n.heat-layer { mix-blend-mode: screen; pointer-events: none; }\n.heat { opacity: 0.22; filter: blur(9px); }\n.scatter { filter: drop-shadow(0 0 2px #fff); }\n\n/* Phone \u2014 DartsKEY-inspired */\n.key-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }\n.key-mode { font-size: 20px; font-weight: 800; letter-spacing: -0.05em; }\n.key-meta { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }\n.key-hero-wrap { position: relative; isolation: isolate; }\n.key-halo { position: absolute; inset: 0; }\n.key-hero {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-height: 176px;\n  padding: 12px 112px 10px 14px;\n  border-radius: 10px;\n  overflow: hidden;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 82%, var(--pc) 8%);\n  clip-path: polygon(0 14px, 18px 0, 100% 0, 100% 100%, 0 100%);\n  border: 1px solid color-mix(in srgb, var(--pc) 30%, transparent);\n}\n.key-left { display: flex; gap: 10px; align-items: center; z-index: 1; max-width: 100%; }\n.key-name { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 35%, transparent); }\n.key-mini { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }\n.key-mini b { color: var(--ink); font-weight: 800; letter-spacing: 0; text-transform: none; }\n.key-score { position: relative; z-index: 1; text-align: center; margin-top: auto; pointer-events: none; }\n.key-score .prev {\n  display: block; font-size: 16px; font-weight: 700; color: var(--muted);\n  text-decoration: line-through; text-decoration-thickness: 2px; opacity: 0.75;\n}\n.key-score .now {\n  font-size: 72px; font-weight: 800; letter-spacing: -0.08em; line-height: 0.82;\n  font-variant-numeric: tabular-nums;\n  text-shadow:\n    0 0 8px color-mix(in srgb, var(--pc) 50%, transparent),\n    0 0 22px color-mix(in srgb, var(--pc) 28%, transparent);\n}\n.key-opp {\n  position: absolute; top: 0; right: 0; z-index: 2;\n  min-width: 88px; padding: 8px 12px 10px 28px;\n  clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%);\n  background: color-mix(in srgb, var(--card-background-color, #111) 70%, #000 30%);\n  border-left: 1px solid color-mix(in srgb, var(--primary-text-color, #fff) 12%, transparent);\n  text-align: right;\n}\n.key-opp span { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }\n.key-opp b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }\n.key-visit { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: stretch; }\n.turn-total {\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  border: 1px solid var(--line); border-radius: 8px;\n  box-shadow: 0 0 12px color-mix(in srgb, var(--pc) 14%, transparent);\n}\n.turn-total small { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); text-align: center; padding: 0 2px; line-height: 1.2; }\n.turn-total b { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }\n.key-darts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }\n.key-dart {\n  min-height: 64px; border: 1px solid var(--line); border-radius: 8px;\n  display: flex; flex-direction: column; align-items: center; justify-content: center;\n  background: color-mix(in srgb, var(--card-background-color, #1c1c1e) 70%, transparent);\n}\n.key-dart b { font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }\n.key-dart small { font-size: 11px; font-weight: 600; color: var(--muted); }\n.key-dart.on {\n  border-color: color-mix(in srgb, var(--pc) 50%, transparent);\n  box-shadow: 0 0 14px color-mix(in srgb, var(--pc) 22%, transparent);\n}\n.key-dart.on b { text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 45%, transparent); }\n.key-dart.empty { border-style: dashed; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }\n.key-bar {\n  display: flex; align-items: center; gap: 6px;\n  padding: 8px 4px 4px;\n  border-top: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  box-shadow: 0 -1px 12px color-mix(in srgb, var(--primary-color, var(--accent)) 8%, transparent);\n}\n.key-turn {\n  flex: 1; text-align: center;\n  font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: none;\n  text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 40%, transparent);\n}\n.hitlbl b {\n  text-shadow: 0 0 12px color-mix(in srgb, var(--pc, var(--primary-color)) 35%, transparent);\n}\n\n/* Neon hairlines on key dividers */\n.section-h { border-bottom-color: color-mix(in srgb, var(--primary-color, var(--accent)) 22%, var(--line)); }\n\n@media (max-width: 1400px) {\n  .main { padding: 16px 24px 28px 20px; }\n  .game-omni { gap: 16px 24px; }\n  .pl-score { font-size: clamp(48px, 6vw, 80px); }\n}\n@media (max-width: 900px) {\n  .app {\n    min-height: 0;\n    height: auto;\n    overflow: visible;\n  }\n  .stage {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto auto;\n    grid-template-areas: \"top\" \"main\";\n    min-height: 0;\n    height: auto;\n    overflow: visible;\n  }\n  .rail { display: none; }\n  .stage > .top, .top {\n    display: grid;\n    grid-area: top;\n    grid-template-columns: 1fr auto;\n    grid-template-areas: \"brand status\" \"nav nav\";\n    gap: 4px 12px;\n    padding: 12px 16px 0;\n  }\n  .brand { grid-area: brand; padding-bottom: 4px; }\n  .nav { grid-area: nav; justify-content: space-between; width: 100%; gap: 0; }\n  .nav button { font-size: 11px; padding: 10px 2px 14px; letter-spacing: 0.02em; min-width: 0; flex: 1 1 0; }\n  .status { grid-area: status; padding-bottom: 4px; }\n  .main {\n    padding: 12px 16px 16px;\n    overflow: visible;\n    height: auto;\n    max-height: none;\n    min-height: 0;\n    scroll-padding-bottom: var(--arena-footer-clear);\n  }\n  .game-omni { display: none; }\n  .game-key { display: flex; flex-direction: column; gap: 12px; height: auto; overflow: visible; padding-bottom: var(--arena-footer-clear); }\n  .key-bar {\n    position: fixed;\n    left: 0;\n    right: 0;\n    bottom: 0;\n    z-index: 20;\n    background: color-mix(in srgb, var(--card-background-color, #16181e) 94%, #000 6%);\n    padding: 8px 12px max(12px, env(safe-area-inset-bottom, 0px));\n    margin: 0;\n    border-top: 1px solid color-mix(in srgb, var(--primary-color, var(--accent)) 22%, transparent);\n  }\n  .key-board { max-height: none; overflow: hidden; }\n  .key-board .board-art { width: min(100%, calc(min(38vh, 300px) + 36px)); }\n  .key-board .board-art svg { width: 100%; height: auto; max-height: none; }\n  .key-bar, .play-actions { overflow: visible; }\n  .score { font-size: clamp(64px, 18vw, 96px); }\n  .pal { width: calc(50% - 4px); }\n  .wash-player, .wash-ring { opacity: 0.16; }\n}\n@media (max-height: 850px) and (min-width: 901px) {\n  .main { padding-top: 12px; padding-bottom: 16px; }\n  .pl-score { font-size: clamp(48px, 8vh, 84px); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .lights, .lights *, .wash, .edge, .rim-aura, .rim-glow, .who .name, .row.cur .nm, .row.cur::after, .score, .board-side svg,\n  .pl.cur, .halo-glow, .halo-ring, .key-halo, .key-hero-wrap.cur .key-halo,\n  .dart-pin-wrap.drop-in .dart-drop, .dart-card.just-landed, .key-dart.just-landed {\n    animation: none !important;\n    transition: none !important;\n  }\n  .lights.is-hit .wash-hit { opacity: 0.16; transform: translate(-50%, -50%) scale(1); }\n  .wash-player, .wash-ring, .wash-accent { transform: none; }\n  .pl.cur .halo-glow, .key-hero-wrap.cur .halo-glow {\n    background: radial-gradient(circle, color-mix(in srgb, var(--pc) 40%, transparent), transparent 70%);\n    filter: blur(16px);\n    opacity: 0.4;\n  }\n}\n\n.key-hero-wrap.idle .key-score { display: none; }\n.key-hero-wrap.idle .key-hero { min-height: 0; padding-bottom: 16px; }\n.row-main {\n  appearance: none; background: none; border: 0; color: inherit; font: inherit;\n  display: grid; grid-template-columns: 3px 1fr auto; gap: 16px; align-items: center;\n  width: 100%; text-align: left; cursor: pointer; padding: 0;\n}\n.roster .row { display: flex; align-items: center; gap: 8px; }\n.swatch-chip { width: 28px; height: 28px; border-radius: 4px; flex: 0 0 28px; }\n.badge strong:empty { display: none; }\n\nbutton.dart-card, button.key-dart {\n  appearance: none; color: inherit; font: inherit; padding: 0; cursor: pointer;\n  text-align: inherit; width: 100%;\n}\n.dart-card svg, .key-dart svg { pointer-events: none; }\n.dart-card.empty svg, .key-dart.empty svg { opacity: 0.55; }\n.dart-card .wait, .key-dart .wait {\n  letter-spacing: 0.04em; font-size: 11px; font-weight: 700; color: var(--muted);\n  width: 100%; text-align: center; text-transform: none;\n}\n.dart-card.just-landed, .key-dart.just-landed {\n  animation: cropPulse 0.9s ease-out 1;\n}\n.dart-card.focus, .key-dart.focus, .key-dart.latest, .dart-card.latest {\n  border-color: color-mix(in srgb, var(--pc) 70%, transparent);\n  box-shadow: 0 0 16px color-mix(in srgb, var(--pc) 26%, transparent);\n}\n@keyframes cropPulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pc) 48%, transparent); }\n  45% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--pc) 40%, transparent); }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n.key-darts .dart-card { min-height: 86px; }\n.key-darts .dart-card svg { height: 76px; width: 100%; display: block; background: #14161c; }\n.key-darts .dc-meta { width: 100%; padding: 4px 6px 6px; }\n.board-side.idle .rim-aura, .board-side.idle .rim-glow {\n  stroke: var(--board-glow, var(--accent-color, var(--primary-color)));\n}\n.dart-aura {\n  fill: var(--dc, var(--pc, var(--accent-color)));\n  opacity: 0.34;\n  filter: blur(2.3px);\n}\n.dart-flight {\n  fill: color-mix(in srgb, var(--dc, var(--pc, var(--accent-color))) 78%, #fff);\n  stroke: color-mix(in srgb, var(--dc, var(--pc)) 35%, #fff);\n  stroke-width: 0.25;\n  filter: drop-shadow(0 0 2.1px color-mix(in srgb, var(--dc, var(--pc)) 70%, transparent));\n}\n.dart-flight.back {\n  fill: color-mix(in srgb, var(--dc, var(--pc)) 50%, #1a1a1e);\n  opacity: 0.92;\n  filter: none;\n}\n.dart-barrel {\n  fill: color-mix(in srgb, var(--dc, var(--pc)) 28%, #d8dce3);\n  stroke: color-mix(in srgb, var(--ink, #111) 20%, #fff);\n  stroke-width: 0.2;\n}\n.dart-grip { fill: color-mix(in srgb, var(--dc, var(--pc)) 20%, #9aa0ab); }\n.dart-shaft { fill: #f3f5f8; }\n.dart-tip {\n  fill: #f7f8fb;\n  filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--dc, var(--pc)) 80%, transparent));\n}\n.dart-pin-wrap.drop-in .dart-drop {\n  animation: dartDrop 0.48s cubic-bezier(.2,.75,.25,1) both;\n  transform-box: fill-box;\n  transform-origin: center top;\n}\n@keyframes dartDrop {\n  0% { transform: translateY(-26px) scale(1.16); opacity: 0; }\n  72% { transform: translateY(1.4px) scale(1); opacity: 1; }\n  100% { transform: translateY(0) scale(1); opacity: 1; }\n}\n.dart-pin-wrap.is-focus .dart-aura { opacity: 0.55; }\n.dart-pin-wrap.is-focus .dart-pin {\n  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dc, var(--pc)) 75%, transparent));\n}\n\n.lights, .lights *, .wash, .edge, .edge i, .halo, .key-halo, .halo-wrap, .halo-glow, .halo-ring,\n.row.cur::after, .rim-aura, .rim-glow,\n.dart-pin-wrap, .dart-drop, .dart-pin, .heat-layer, .scatter-layer {\n  pointer-events: none !important;\n}\nbutton, input, select, textarea, a, .dart-card, .key-dart, .row-main, .toggle, .swatch, .pal, .nav button, .rail-nav button {\n  pointer-events: auto;\n  touch-action: manipulation;\n}\n.modal-bg { pointer-events: auto; }\n\n.offline-badge {\n  display: inline-block;\n  margin-left: 8px;\n  padding: 2px 8px;\n  font-size: 10px;\n  font-weight: 700;\n  letter-spacing: 0.06em;\n  color: var(--muted, #b4b8c2);\n  border: 1px solid color-mix(in srgb, var(--primary-text-color, #fff) 22%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 60%, transparent);\n  vertical-align: middle;\n}\n.status .dot.off { background: var(--muted, #b4b8c2); }\n\n.lights, .lights *, .wash, .edge, .rim-aura, .rim-glow, .key-halo, .halo-wrap, .halo-glow, .halo-ring, .who .halo {\n  pointer-events: none !important;\n}\n.nav, .rail-nav, .nav button, .rail-nav button, .play-actions, .modes, .section, .section-h {\n  position: relative;\n  z-index: 2;\n}\n\n@media (max-width: 900px) {\n  .key-bar {\n    position: fixed !important;\n    left: 0;\n    right: 0;\n    bottom: 0;\n    z-index: 20 !important;\n  }\n}\n\n/* data-act pointer fix: designed controls must receive taps. Do not cover them. */\nbutton, .swatch, .pal, .toggle, input[type=\"range\"], input[type=\"text\"], [data-act], [data-act-change], [data-act-blur], [data-act-key] {\n  pointer-events: auto !important;\n  touch-action: manipulation;\n  cursor: pointer;\n}\ninput[type=\"range\"], input[type=\"text\"] { cursor: auto; }\ninput[type=\"range\"] { cursor: pointer; }\n\n\n@media (max-width: 900px) {\n  .stage > .top, .top {\n    position: sticky;\n    top: 0;\n    z-index: 15;\n    background: color-mix(in srgb, var(--card-background-color, #16181e) 94%, #000 6%);\n  }\n  .key-visit, .key-darts, .dart-card, .key-dart, .dart-tray, .key-hero-wrap {\n    position: relative;\n    z-index: 3;\n  }\n  .key-board { position: relative; z-index: 0; overflow: hidden; }\n}\n\n/* Room WLED units */\n.wled-unit { margin-top: 8px; }\n.wled-h {\n  display: flex; align-items: center; justify-content: space-between; gap: 12px;\n  padding: 8px 0 10px; border-bottom: 1px solid var(--line);\n}\n.wled-name {\n  appearance: none; background: transparent; border: 0; color: inherit;\n  font: inherit; display: inline-flex; align-items: center; gap: 8px;\n  cursor: pointer; padding: 0; margin: 0;\n  font-size: 13px; font-weight: 650; letter-spacing: 0.08em;\n}\n.wled-name svg { width: 16px; height: 16px; flex: 0 0 16px; transition: transform var(--ease); }\n.wled-unit:not(.open) .wled-name svg { transform: rotate(-90deg); }\n.wled-unit:not(.open) .wled-body { display: none; }\n.wled-body { padding-top: 12px; }\n\n.halo-wrap, .key-halo, .halo-glow, .halo-ring { display: none !important; }\n\n.glow-swatch {\n  display: block; width: 22px; height: 22px; border-radius: 50%;\n  box-shadow: 0 0 8px color-mix(in srgb, currentColor 35%, transparent);\n  flex: 0 0 22px;\n}\n.glow-row .icon-tile { min-width: 56px; }\n/* Stats tab — Darts Arena */\n.preview-flag {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 16px;\n  margin: 0 0 18px;\n  padding: 0 0 12px;\n  border-bottom: 1px solid var(--line);\n}\n.preview-flag h1 {\n  margin: 0;\n  font-size: clamp(28px, 3.2vw, 42px);\n  font-weight: 700;\n  letter-spacing: -0.035em;\n  line-height: 1.05;\n}\n.preview-flag .lede { max-width: 46rem; }\n.preview-flag .mark {\n  flex: 0 0 auto;\n  font-size: 11px;\n  font-weight: 700;\n  letter-spacing: 0.14em;\n  text-transform: none;\n  color: var(--neon, #7fd4f5);\n  text-shadow: 0 0 12px color-mix(in srgb, var(--primary-color, #5dade2) 45%, transparent);\n}\n\n.stats-grid {\n  display: grid;\n  gap: 16px;\n  align-items: stretch;\n}\n.stats-grid.scope-game {\n  grid-template-columns: repeat(6, 1fr);\n  grid-template-rows: minmax(210px, 1.1fr) minmax(190px, 1fr) minmax(200px, 1.05fr);\n  grid-template-areas:\n    \"visits visits running running race race\"\n    \"gauges gauges sparks sparks sparks sparks\"\n    \"phit phit prange prange pcheck pcheck\";\n}\n.stats-grid.scope-game:has(.cell-pcricket) {\n  grid-template-columns: repeat(8, 1fr);\n  grid-template-areas:\n    \"visits visits running running race race gauges gauges\"\n    \"sparks sparks sparks sparks sparks sparks sparks sparks\"\n    \"phit phit prange prange pcheck pcheck pcricket pcricket\";\n}\n.stats-grid.scope-session {\n  grid-template-columns: repeat(6, 1fr);\n  grid-template-rows: minmax(200px, 1.05fr) minmax(190px, 1fr) minmax(200px, 1.05fr);\n  grid-template-areas:\n    \"avg avg first9 first9 checkout checkout\"\n    \"best best h2h h2h winpie winpie\"\n    \"phit phit prange prange pcheck pcheck\";\n}\n.stats-grid.scope-session:has(.cell-pcricket),\n.stats-grid.scope-session:has(.cell-mpr) {\n  grid-template-columns: repeat(6, 1fr);\n  grid-template-rows: minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(190px, 1fr);\n  grid-template-areas:\n    \"avg avg first9 first9 checkout checkout\"\n    \"best best mpr mpr mpr mpr\"\n    \"h2h h2h h2h winpie winpie winpie\"\n    \"phit phit prange prange pcheck pcricket\";\n}\n.cell-avg { grid-area: avg; }\n.cell-first9 { grid-area: first9; }\n.cell-checkout { grid-area: checkout; }\n.cell-best { grid-area: best; }\n.cell-h2h { grid-area: h2h; }\n.cell-winpie { grid-area: winpie; }\n.cell-gauges { grid-area: gauges; }\n.cell-sparks { grid-area: sparks; }\n.cell-visits { grid-area: visits; }\n.cell-running { grid-area: running; }\n.cell-race { grid-area: race; }\n.cell-phit { grid-area: phit; }\n.cell-prange { grid-area: prange; }\n.cell-pcheck { grid-area: pcheck; }\n.cell-pcricket { grid-area: pcricket; }\n.cell-mpr { grid-area: mpr; }\n.stats-grid > * { min-width: 0; min-height: 0; display: flex; }\n.stat-panel { flex: 1 1 auto; width: 100%; }\n\n.stat-panel {\n  min-width: 0;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  padding: 14px 16px 12px;\n  border: 1px solid var(--line);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--card-background-color, #16181e) 55%, transparent);\n}\n.stat-panel .ph {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 12px;\n  margin-bottom: 8px;\n  min-height: 18px;\n}\n.stat-panel h2 {\n  margin: 0;\n  font-size: 13px;\n  font-weight: 650;\n  letter-spacing: 0.08em;\n  color: var(--ink);\n}\n.legend {\n  display: flex;\n  flex-wrap: wrap;\n  justify-content: flex-end;\n  gap: 12px 14px;\n  font-size: 11px;\n  font-weight: 600;\n  color: var(--muted);\n  letter-spacing: 0.02em;\n}\n.legend i {\n  display: inline-block;\n  width: 12px;\n  height: 2px;\n  margin-right: 6px;\n  vertical-align: middle;\n  border-radius: 0;\n  background: currentColor;\n  box-shadow: 0 0 8px currentColor;\n}\n.legend span { white-space: nowrap; }\n\n.plot {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  width: 100%;\n}\n.plot svg {\n  display: block;\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  overflow: visible;\n}\n.plot .axis, .plot .grid {\n  stroke: color-mix(in srgb, var(--primary-text-color, #fff) 12%, transparent);\n  stroke-width: 1;\n  fill: none;\n}\n.plot .tick {\n  fill: var(--muted);\n  font-size: 10px;\n  font-weight: 500;\n  font-family: inherit;\n}\n.plot .line {\n  fill: none;\n  stroke-width: 2.25;\n  stroke-linejoin: round;\n  stroke-linecap: round;\n  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--stroke, #00d4f5) 55%, transparent));\n}\n.plot .area { opacity: 0.18; }\n.plot .pt {\n  stroke: none;\n}\n.empty-msg {\n  position: absolute;\n  inset: 0;\n  display: grid;\n  place-items: center;\n  text-align: center;\n  pointer-events: none;\n  color: var(--muted);\n  font-size: 13px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n  padding: 24px;\n}\n\n.gauges {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 8px;\n  flex: 1;\n  min-height: 0;\n  align-items: stretch;\n}\n.gauge {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-end;\n  min-width: 0;\n  overflow: visible;\n  padding: 2px 4px 0;\n}\n.gauge svg {\n  display: block;\n  width: 100%;\n  height: auto;\n  max-height: 160px;\n  overflow: visible;\n  flex: 1 1 auto;\n  min-height: 0;\n}\n.gauge .g-val {\n  font-size: 28px;\n  font-weight: 800;\n  letter-spacing: -0.05em;\n  line-height: 1;\n  font-variant-numeric: tabular-nums;\n}\n.gauge .g-lab {\n  margin-top: 6px;\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.08em;\n  color: var(--muted);\n  text-align: center;\n}\n\n.sparks {\n  display: grid;\n  grid-template-columns: 1fr 1fr 1fr;\n  grid-template-rows: 1fr 1fr;\n  gap: 10px;\n  flex: 1;\n  min-height: 0;\n}\n.spark {\n  position: relative;\n  min-width: 0;\n  min-height: 0;\n  padding: 6px 8px 4px;\n  border: 1px solid var(--line);\n  border-radius: 8px;\n  overflow: hidden;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-between;\n}\n.spark svg {\n  position: absolute;\n  left: 0; right: 0; bottom: 0;\n  width: 100%;\n  height: 58%;\n  opacity: 1;\n  pointer-events: none;\n}\n.spark .k {\n  position: relative;\n  z-index: 1;\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.08em;\n  color: var(--muted);\n}\n.spark .v {\n  position: relative;\n  z-index: 1;\n  font-size: clamp(26px, 2.4vw, 36px);\n  font-weight: 800;\n  letter-spacing: -0.05em;\n  line-height: 0.95;\n  font-variant-numeric: tabular-nums;\n  color: var(--ok, #3dd68c);\n  text-shadow: 0 0 16px color-mix(in srgb, var(--ok, #3dd68c) 35%, transparent);\n}\n\n.plot .bars {\n  position: absolute; inset: 0;\n  display: flex; align-items: stretch;\n  gap: 12px; padding: 4px 8px 0;\n}\n.bar-col {\n  flex: 1;\n  min-width: 0;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-end;\n  gap: 6px;\n}\n.bar-col .val {\n  font-size: 12px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.02em;\n  color: var(--ink);\n  line-height: 1;\n}\n.bar-col .shaft {\n  width: 100%;\n  max-width: 72px;\n  border-radius: 4px 4px 0 0;\n  box-shadow: 0 0 14px color-mix(in srgb, var(--bar, #00d4f5) 35%, transparent);\n}\n.bar-col .lab {\n  font-size: 11px;\n  font-weight: 600;\n  color: var(--muted);\n  letter-spacing: 0.02em;\n  text-align: center;\n  line-height: 1.15;\n  min-height: 1.15em;\n}\n\n@media (max-width: 1400px) {\n  .stats-grid.scope-game,\n  .stats-grid.scope-session,\n  .stats-grid.scope-game:has(.cell-pcricket),\n  .stats-grid.scope-session:has(.cell-pcricket),\n  .stats-grid.scope-session:has(.cell-mpr) {\n    grid-template-columns: 1fr 1fr;\n    grid-template-rows: auto;\n  }\n  .stats-grid.scope-game {\n    grid-template-areas:\n      \"visits running\"\n      \"race gauges\"\n      \"sparks sparks\"\n      \"phit prange\"\n      \"pcheck pcricket\";\n  }\n  .stats-grid.scope-session,\n  .stats-grid.scope-session:has(.cell-pcricket),\n  .stats-grid.scope-session:has(.cell-mpr) {\n    grid-template-areas:\n      \"avg first9\"\n      \"checkout best\"\n      \"h2h winpie\"\n      \"mpr mpr\"\n      \"phit prange\"\n      \"pcheck pcricket\";\n  }\n  .stat-panel { min-height: 240px; }\n}\n\n@media (max-width: 900px) {\n  .preview-flag { flex-direction: column; gap: 8px; margin-bottom: 14px; }\n  .preview-flag h1 { font-size: 28px; }\n  .stats-grid,\n  .stats-grid.scope-game,\n  .stats-grid.scope-session,\n  .stats-grid.scope-game:has(.cell-pcricket),\n  .stats-grid.scope-session:has(.cell-pcricket),\n  .stats-grid.scope-session:has(.cell-mpr) {\n    display: flex;\n    flex-direction: column;\n    gap: 14px;\n    grid-template-areas: none;\n    grid-template-columns: none;\n    grid-template-rows: none;\n  }\n  .stats-grid > * { min-height: 0; }\n  .stat-panel { min-height: 240px; }\n  .cell-gauges .stat-panel { min-height: 200px; }\n  .cell-sparks .stat-panel { min-height: 220px; }\n  .cell-phit .stat-panel,\n  .cell-prange .stat-panel,\n  .cell-pcheck .stat-panel,\n  .cell-winpie .stat-panel,\n  .cell-pcricket .stat-panel { min-height: 230px; }\n  .spark .v { font-size: 30px; }\n  /* 7 tabs on the phone top nav */\n  .nav button { font-size: 10px !important; letter-spacing: 0.08em !important; }\n}\n\n/* Preview nav is inert so it cannot be confused with a live dashboard. */\n.rail-nav button:disabled, .nav button:disabled {\n  opacity: 1;\n  cursor: default;\n  color: inherit;\n}\n.rail-nav button:disabled.on, .nav button:disabled.on { color: var(--ink); }\n\n@media (min-width: 901px) and (max-width: 1400px) {\n  [data-section=\"stats\"] {\n    display: flex;\n    flex-direction: column;\n    height: auto;\n    min-height: 0;\n    overflow: visible;\n  }\n  [data-section=\"stats\"] .preview-flag { flex: 0 0 auto; margin-bottom: 12px; padding-bottom: 10px; }\n  [data-section=\"stats\"] .preview-flag h1 { font-size: clamp(26px, 2.6vw, 36px); }\n  [data-section=\"stats\"] .preview-flag .lede { font-size: 13px; }\n  [data-section=\"stats\"] .stats-grid { flex: 0 0 auto; min-height: 0; }\n  [data-section=\"stats\"] .stat-panel { overflow: hidden; height: auto; }\n}\n\n@media (min-width: 1401px) {\n  .main:has([data-section=\"stats\"]:not([hidden])) {\n    display: flex;\n    flex-direction: column;\n    min-height: 0;\n    height: 100%;\n  }\n  [data-section=\"stats\"] {\n    display: flex;\n    flex-direction: column;\n    flex: 1 1 auto;\n    height: 100%;\n    min-height: 0;\n    overflow: hidden;\n  }\n  [data-section=\"stats\"] .preview-flag { flex: 0 0 auto; margin-bottom: 12px; padding-bottom: 10px; }\n  [data-section=\"stats\"] .preview-flag h1 { font-size: clamp(26px, 2.6vw, 36px); }\n  [data-section=\"stats\"] .preview-flag .lede { font-size: 13px; }\n  [data-section=\"stats\"] .stats-grid {\n    flex: 1 1 auto;\n    min-height: 0;\n  }\n  [data-section=\"stats\"] .stat-panel { overflow: hidden; height: 100%; }\n}\n\n\n.flag-side {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 12px;\n  flex: 0 0 auto;\n}\n.player-switch { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }\n.player-switch .choices { display: flex; gap: 18px; }\n.player-switch button {\n  appearance: none;\n  background: none;\n  border: 0;\n  border-radius: 0;\n  padding: 6px 0 8px;\n  font-size: 13px;\n  font-weight: 650;\n  letter-spacing: 0.06em;\n  color: var(--muted);\n  cursor: pointer;\n  position: relative;\n}\n.player-switch button:hover { color: var(--ink); }\n.player-switch button.on { color: var(--pc, var(--ink)); }\n.player-switch button.on::after {\n  content: \"\";\n  position: absolute;\n  left: 0; right: 0; bottom: 0;\n  height: 2px;\n  background: var(--pc, var(--neon, var(--ink)));\n  box-shadow: 0 0 8px color-mix(in srgb, var(--pc, var(--accent)) 55%, transparent);\n}\n@media (max-width: 900px) {\n  .flag-side { align-items: flex-start; width: 100%; }\n  .player-switch, .player-switch .choices { align-items: flex-start; }\n}\n\n.legend.swatches {\n  flex-direction: column;\n  align-items: flex-start;\n  justify-content: center;\n  gap: 6px 10px;\n  flex-wrap: nowrap;\n}\n.legend.swatches i {\n  width: 8px;\n  height: 8px;\n  border-radius: 2px;\n  margin-right: 8px;\n  box-shadow: 0 0 8px currentColor;\n}\n.pie-plot {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: center;\n  gap: 8px 14px;\n  padding: 4px 6px;\n  overflow: visible;\n}\n.pie-plot svg {\n  position: relative;\n  inset: auto;\n  flex: 0 1 auto;\n  width: auto;\n  height: 100%;\n  max-height: 220px;\n  max-width: 58%;\n  aspect-ratio: 1;\n  overflow: visible;\n}\n.pie-plot .legend {\n  flex: 1 1 120px;\n  min-width: 108px;\n  max-width: 100%;\n}\n.pie-plot .empty-msg { padding: 16px; }\n\n.h2h {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  gap: 10px;\n  flex: 1;\n  min-height: 0;\n  padding: 4px 8px 8px;\n}\n.h2h-score {\n  display: flex;\n  align-items: baseline;\n  justify-content: center;\n  gap: 10px;\n  font-size: clamp(22px, 2vw, 32px);\n  font-weight: 800;\n  letter-spacing: -0.04em;\n  font-variant-numeric: tabular-nums;\n}\n.h2h-dash { color: var(--muted); font-weight: 600; }\n.h2h-row {\n  display: flex;\n  justify-content: space-between;\n  align-items: baseline;\n  gap: 12px;\n  padding: 6px 0;\n  border-top: 1px solid var(--line);\n  font-size: 13px;\n  font-weight: 650;\n}\n.h2h-game { color: var(--muted); letter-spacing: 0.06em; }\n.h2h-win { font-weight: 700; }\n\n@media (max-width: 900px) {\n  .sparks { grid-template-columns: 1fr 1fr; }\n  .pie-plot { min-height: 200px; }\n}\n\n@media (min-width: 901px) {\n  .spark .v { font-size: clamp(20px, 1.6vw, 30px); }\n}\n\n@media (max-width: 900px) {\n  .nav button { font-size: 10px; letter-spacing: 0.08em; }\n}\n\n:host([data-fill-height]) { height: 100% !important; max-height: none !important; }\n:host([data-fill-height]) .app, :host([data-fill-height]) .stage { height: 100%; min-height: 100%; }\n";
 const DARTS_PALETTES = [{"name": "Default", "gradient": "linear-gradient(90deg, #ff0000 0%, #ffbf00 12%, #80ff00 25%, #00ff40 38%, #00ffff 50%, #0046ff 62%, #7a00ff 75%, #ff00c5 88%, #ff0006 100%)"}, {"name": "Color 1", "gradient": "linear-gradient(90deg, #ffffff 0%, #ffffff 12%, #ffffff 25%, #ffffff 38%, #ffffff 50%, #ffffff 62%, #ffffff 75%, #ffffff 88%, #ffffff 100%)"}, {"name": "Colors 1&2", "gradient": "linear-gradient(90deg, #ffffff 0%, #ffffff 12%, #ffffff 25%, #ffffff 38%, #0000ff 50%, #0000ff 62%, #0000ff 75%, #0000ff 88%, #0000ff 100%)"}, {"name": "Color Gradient", "gradient": "linear-gradient(90deg, #ffffff 0%, #bfbfff 12%, #8080ff 25%, #4040ff 38%, #0000ff 50%, #3e3eff 62%, #7e7eff 75%, #bdbdff 88%, #fdfdff 100%)"}, {"name": "Rainbow", "gradient": "linear-gradient(90deg, #ff0000 0%, #ffbf00 12%, #80ff00 25%, #00ff40 38%, #00ffff 50%, #0046ff 62%, #7a00ff 75%, #ff00c5 88%, #ff0006 100%)"}, {"name": "Rainbow Bands", "gradient": "linear-gradient(90deg, #ff0000 0%, #ffbf00 12%, #80ff00 25%, #00ff40 38%, #00ffff 50%, #00ffff 62%, #0040ff 75%, #8000ff 88%, #ff00bf 100%)"}, {"name": "Party", "gradient": "linear-gradient(90deg, #5500ab 0%, #84007c 7%, #b5004b 13%, #e5001b 20%, #e81700 27%, #b84700 33%, #ab7700 40%, #abab00 47%, #ab5500 53%, #dd2200 60%, #f2000e 67%, #c2003e 73%, #8f0071 80%, #5f00a1 87%, #2d00d2 93%, #0007f9 100%)"}, {"name": "Cloud", "gradient": "linear-gradient(90deg, #0000ff 0%, #00008b 7%, #00008b 13%, #00008b 20%, #00008b 27%, #00008b 33%, #00008b 40%, #00008b 47%, #0000ff 53%, #00008b 60%, #87ceeb 67%, #87ceeb 73%, #add8e6 80%, #ffffff 87%, #add8e6 93%, #87ceeb 100%)"}, {"name": "Lava", "gradient": "linear-gradient(90deg, #000000 0%, #800000 7%, #000000 13%, #800000 20%, #8b0000 27%, #800000 33%, #8b0000 40%, #8b0000 47%, #8b0000 53%, #ff0000 60%, #ffa500 67%, #ffffff 73%, #ffa500 80%, #ff0000 87%, #8b0000 93%, #000000 100%)"}, {"name": "Ocean", "gradient": "linear-gradient(90deg, #191970 0%, #00008b 7%, #191970 13%, #000080 20%, #00008b 27%, #0000cd 33%, #2e8b57 40%, #008080 47%, #5f9ea0 53%, #0000ff 60%, #008b8b 67%, #6495ed 73%, #7fffd4 80%, #2e8b57 87%, #00ffff 93%, #87cefa 100%)"}, {"name": "Forest", "gradient": "linear-gradient(90deg, #006400 0%, #006400 7%, #556b2f 13%, #006400 20%, #008000 27%, #228b22 33%, #6b8e23 40%, #008000 47%, #2e8b57 53%, #66cdaa 60%, #32cd32 67%, #9acd32 73%, #90ee90 80%, #7cfc00 87%, #66cdaa 93%, #228b22 100%)"}, {"name": "Heat", "gradient": "linear-gradient(90deg, #000000 0%, #ff0000 33%, #ffff00 67%, #ffffff 100%)"}, {"name": "Sunset", "gradient": "linear-gradient(90deg, #780000 0%, #b31600 9%, #ff6800 20%, #a71612 33%, #640067 53%, #100082 78%, #0000a0 100%)"}, {"name": "Rivendell", "gradient": "linear-gradient(90deg, #010e05 0%, #10240e 40%, #38441e 65%, #969c63 95%, #969c63 100%)"}, {"name": "Breeze", "gradient": "linear-gradient(90deg, #010607 0%, #01636f 35%, #90d1ff 60%, #004952 100%)"}, {"name": "Red & Blue", "gradient": "linear-gradient(90deg, #ff0000 0%, #ff0000 25%, #0000ff 38%, #0000ff 63%, #ff0000 75%, #ff0000 100%)"}, {"name": "Yellowout", "gradient": "linear-gradient(90deg, #bc8701 0%, #2e0701 100%)"}, {"name": "Analogous", "gradient": "linear-gradient(90deg, #0300ff 0%, #1700ff 25%, #4300ff 50%, #8e002d 75%, #ff0000 100%)"}, {"name": "Splash", "gradient": "linear-gradient(90deg, #7e0bff 0%, #c50116 50%, #d29dac 69%, #9d0370 87%, #9d0370 100%)"}, {"name": "Pastel", "gradient": "linear-gradient(90deg, #0a3e7b 0%, #388267 14%, #99e155 34%, #c7d944 39%, #ffcf36 42%, #f79839 45%, #ef6b3d 47%, #f79839 50%, #ffcf36 71%, #ffe955 100%)"}, {"name": "Sunset 2", "gradient": "linear-gradient(90deg, #6e310b 0%, #37220a 11%, #161609 27%, #ef7c08 27%, #dc9c1b 38%, #cbc13d 49%, #213538 70%, #000134 100%)"}, {"name": "Beach", "gradient": "linear-gradient(90deg, #fffcd6 0%, #fffcd6 9%, #bebf73 10%, #898d34 11%, #70ffcd 11%, #33f6d6 20%, #11ebe2 28%, #02c1c7 36%, #009cae 47%, #016573 52%, #013b47 53%, #0783aa 54%, #015a97 82%, #003885 100%)"}, {"name": "Vintage", "gradient": "linear-gradient(90deg, #040101 0%, #100001 20%, #616803 30%, #ff8313 40%, #430904 50%, #100001 60%, #040101 90%, #040101 100%)"}, {"name": "Departure", "gradient": "linear-gradient(90deg, #080300 0%, #170700 16%, #4b2606 25%, #a96326 33%, #d5a977 42%, #ffffff 45%, #87ff8a 54%, #16ff18 58%, #00ff00 67%, #008800 75%, #003700 83%, #003700 100%)"}, {"name": "Landscape", "gradient": "linear-gradient(90deg, #000000 0%, #021901 15%, #0f7305 30%, #4fd501 50%, #7ed32f 50%, #bcd1f7 51%, #90b6cd 60%, #3b75fa 80%, #0125c0 100%)"}, {"name": "Sherbet", "gradient": "linear-gradient(90deg, #ff2104 0%, #ff4419 17%, #ff0719 34%, #ff5267 50%, #fffff2 67%, #2aff16 82%, #57ff41 100%)"}, {"name": "Hult", "gradient": "linear-gradient(90deg, #f7b0f7 0%, #ff88ff 19%, #dc1de2 35%, #0752b2 63%, #017c6d 85%, #017c6d 100%)"}, {"name": "Drywet", "gradient": "linear-gradient(90deg, #776121 0%, #ebc758 16%, #a9ee7c 33%, #25eee8 50%, #0778ec 67%, #1b01af 83%, #043365 100%)"}, {"name": "Jul", "gradient": "linear-gradient(90deg, #e2060c 0%, #1a604e 37%, #82bd5e 52%, #b10309 100%)"}, {"name": "Grintage", "gradient": "linear-gradient(90deg, #020101 0%, #120100 21%, #451d01 41%, #a7870a 60%, #2e3804 100%)"}, {"name": "Rewhi", "gradient": "linear-gradient(90deg, #715b93 0%, #9d584e 28%, #d05521 35%, #ff1d0b 42%, #891f27 55%, #3b2159 100%)"}, {"name": "Tertiary", "gradient": "linear-gradient(90deg, #0001ff 0%, #03442d 25%, #17ff00 50%, #644401 75%, #ff0104 100%)"}, {"name": "Fire", "gradient": "linear-gradient(90deg, #000000 0%, #4d0000 18%, #b10000 38%, #c42609 42%, #d74c13 47%, #eb731d 57%, #ff9929 68%, #ffb229 74%, #ffcc29 79%, #ffe629 85%, #ffff29 92%, #ffff8f 96%, #ffffff 100%)"}, {"name": "Icefire", "gradient": "linear-gradient(90deg, #000000 0%, #00092d 23%, #0026ff 47%, #0364ff 58%, #17c7ff 71%, #64ebff 85%, #ffffff 100%)"}, {"name": "Ice", "gradient": "linear-gradient(90deg, #001040 0%, #0050c8 39%, #00a0ff 67%, #c8f0ff 100%)"}, {"name": "Cyane", "gradient": "linear-gradient(90deg, #0a5505 0%, #1d6d12 10%, #3b8a2a 24%, #536334 36%, #6e4240 42%, #7b3141 43%, #8b2342 44%, #c07562 45%, #ffff89 49%, #64b49b 66%, #1679ae 100%)"}, {"name": "Light Pink", "gradient": "linear-gradient(90deg, #130227 0%, #1a042d 10%, #210634 20%, #443e7d 30%, #76bbf0 40%, #a3d7f7 43%, #d9f4ff 45%, #9f95dd 48%, #714ebc 58%, #80399b 72%, #92287b 100%)"}, {"name": "Autumn", "gradient": "linear-gradient(90deg, #1a0101 0%, #430401 20%, #760e01 33%, #899834 41%, #714101 44%, #85953b 48%, #899834 49%, #714101 53%, #8b9a2e 56%, #710d01 64%, #370301 80%, #110101 98%, #110101 100%)"}, {"name": "Magenta", "gradient": "linear-gradient(90deg, #000000 0%, #00002d 16%, #0000ff 33%, #2a00ff 50%, #ff00ff 67%, #ff37ff 83%, #ffffff 100%)"}, {"name": "Magred", "gradient": "linear-gradient(90deg, #000000 0%, #2a002d 25%, #ff00ff 50%, #ff002d 75%, #ff0000 100%)"}, {"name": "Yelmag", "gradient": "linear-gradient(90deg, #000000 0%, #2a0000 16%, #ff0000 33%, #ff002d 50%, #ff00ff 67%, #ff372d 83%, #ffff00 100%)"}, {"name": "Yelblu", "gradient": "linear-gradient(90deg, #0000ff 0%, #0037ff 25%, #00ffff 50%, #2aff2d 75%, #ffff00 100%)"}, {"name": "Orange & Teal", "gradient": "linear-gradient(90deg, #00965c 0%, #00965c 22%, #ff4800 78%, #ff4800 100%)"}, {"name": "Tiamat", "gradient": "linear-gradient(90deg, #01020e 0%, #020523 13%, #0d875c 39%, #2bffc1 47%, #f707f9 55%, #c111d0 63%, #27ff9a 71%, #04d5ec 78%, #27fc87 86%, #c1d5fd 94%, #fff9ff 100%)"}, {"name": "April Night", "gradient": "linear-gradient(90deg, #01052d 0%, #01052d 4%, #05a9af 10%, #01052d 16%, #01052d 24%, #2daf1f 30%, #01052d 36%, #01052d 44%, #f99605 50%, #01052d 56%, #01052d 64%, #ff5c00 70%, #01052d 76%, #01052d 84%, #df2d48 90%, #01052d 96%, #01052d 100%)"}, {"name": "Orangery", "gradient": "linear-gradient(90deg, #ffad17 0%, #ff5200 14%, #ff2000 27%, #ff5200 41%, #9e0d0b 55%, #ff5200 69%, #ff2000 82%, #ff5200 100%)"}, {"name": "C9", "gradient": "linear-gradient(90deg, #b80400 0%, #b80400 24%, #902c02 25%, #902c02 49%, #046002 51%, #046002 75%, #070758 76%, #070758 100%)"}, {"name": "Sakura", "gradient": "linear-gradient(90deg, #c4130a 0%, #ff452d 25%, #df2d48 51%, #ff5267 76%, #df0d11 100%)"}, {"name": "Aurora", "gradient": "linear-gradient(90deg, #01052d 0%, #00c817 25%, #00ff00 50%, #00f32d 67%, #008707 78%, #01052d 100%)"}, {"name": "Atlantica", "gradient": "linear-gradient(90deg, #001c70 0%, #2060ff 20%, #00f32d 39%, #0c5f52 59%, #19be5f 78%, #28aa50 100%)"}, {"name": "Temperature", "gradient": "linear-gradient(90deg, #011b69 0%, #01287f 5%, #0146a8 11%, #015cc5 16%, #0177dd 22%, #038297 27%, #179c95 33%, #43b670 39%, #79c934 44%, #8ecb0b 50%, #e0df01 55%, #fcbb02 61%, #f79301 67%, #ed5701 72%, #e52b01 78%, #ab0202 89%, #500303 94%, #500303 100%)"}, {"name": "Retro Clown", "gradient": "linear-gradient(90deg, #e36503 0%, #c21213 46%, #5c08c0 100%)"}, {"name": "Candy", "gradient": "linear-gradient(90deg, #e5e301 0%, #e36503 6%, #280150 56%, #11014f 78%, #00002d 100%)"}, {"name": "Toxy Reaf", "gradient": "linear-gradient(90deg, #01dd35 0%, #4903b2 100%)"}, {"name": "Fairy Reaf", "gradient": "linear-gradient(90deg, #b80180 0%, #01c1b6 63%, #99e3be 86%, #ffffff 100%)"}, {"name": "Semi Blue", "gradient": "linear-gradient(90deg, #000000 0%, #010103 5%, #080116 21%, #040659 31%, #0219d8 47%, #070a63 57%, #0f021f 73%, #020105 91%, #000000 100%)"}, {"name": "Pink Candy", "gradient": "linear-gradient(90deg, #ffffff 0%, #070cff 18%, #e3017f 44%, #e3017f 55%, #ffffff 61%, #e3017f 77%, #2d0163 100%)"}, {"name": "Red Reaf", "gradient": "linear-gradient(90deg, #030d2b 0%, #4e8df0 41%, #ff0000 74%, #1c0101 100%)"}, {"name": "Aqua Flash", "gradient": "linear-gradient(90deg, #000000 0%, #39e3e9 26%, #ffff08 38%, #ffffff 49%, #ffff08 60%, #39e3e9 74%, #000000 100%)"}, {"name": "Yelblu Hot", "gradient": "linear-gradient(90deg, #040209 0%, #10002f 23%, #180010 48%, #900901 62%, #b32d01 72%, #dc7202 86%, #eaed01 100%)"}, {"name": "Red Flash", "gradient": "linear-gradient(90deg, #000000 0%, #e30101 39%, #f9c75f 51%, #e30101 61%, #000000 100%)"}, {"name": "Red Shift", "gradient": "linear-gradient(90deg, #1f011b 0%, #220110 18%, #890509 39%, #d5800a 52%, #c71601 69%, #c70906 79%, #010001 100%)"}, {"name": "Red Tide", "gradient": "linear-gradient(90deg, #f70500 0%, #ff4301 11%, #ea580b 17%, #eab033 23%, #e51c01 33%, #710c01 45%, #ffe12c 55%, #710c01 66%, #f4d158 77%, #ff1c01 85%, #350101 100%)"}, {"name": "Candy2", "gradient": "linear-gradient(90deg, #272122 0%, #04060f 10%, #311d16 19%, #e0ad01 29%, #b12305 35%, #04060f 51%, #ff7206 64%, #e0ad01 73%, #272122 83%, #010101 100%)"}];
 const PAL = ['#ff3b30', '#0a84ff', '#30d158', '#ffd60a', '#bf5af2', '#ff9f0a', '#64d2ff', '#ff375f'];
 const NAMED = { red: '#ff3b30', blue: '#0a84ff', green: '#30d158', yellow: '#ffd60a', purple: '#bf5af2', orange: '#ff9f0a', cyan: '#64d2ff', pink: '#ff375f', white: '#ffffff', teal: '#40c8e0', lime: '#a3e635', gold: '#ffc300' };
@@ -19,7 +19,7 @@ const MODES = [
   ['Around The Clock', { game: 'around_the_clock' }, 'Start A New Around The Clock Game?']
 ];
 const TABS = [
-  ['game', 'Game'], ['players', 'Players'], ['ring', 'Ring'],
+  ['game', 'Game'], ['stats', 'Stats'], ['players', 'Players'], ['ring', 'Ring'],
   ['room', 'Room'], ['sounds', 'Sounds'], ['settings', 'Settings']
 ];
 /* DARTS_CONFIG — live defaults. Public templates override window.DARTS_CONFIG
@@ -459,6 +459,16 @@ function installApi(card) {
       try { if (window.__dartsCard && window.__dartsCard._lockGlowHeight) window.__dartsCard._lockGlowHeight(false); } catch (e) {}
       return false;
     },
+    statsScope(name) {
+      window.__dartsStatsScope = name === 'session' ? 'session' : 'game';
+      try { if (window.__dartsCard && window.__dartsCard._update) window.__dartsCard._update(); } catch (e) {}
+      return false;
+    },
+    statsPlayer(id) {
+      window.__dartsStatsPlayer = id;
+      try { if (window.__dartsCard && window.__dartsCard._update) window.__dartsCard._update(); } catch (e) {}
+      return false;
+    },
     leg(v) {
       window.__dartsLeg = String(v);
       const root = appRoot();
@@ -617,6 +627,7 @@ const ICON = {
   flag: 'M14.4,6H20V16H13L12.6,14H7V21H5V4H14L14.4,6Z',
   mark: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
   game: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm0 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
+  stats: 'M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L3.82,19H2V17H4.64L10.37,9.06L16,11.78Z',
   players: 'M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4A3.39 3.39 0 0 0 13.07 4.59 5 5 0 0 1 13.07 10.41 3.39 3.39 0 0 0 15 11A3.5 3.5 0 0 0 15 4Z',
   ring: 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z',
   room: 'M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z',
@@ -1660,6 +1671,1002 @@ function applyBoardGlow(root, now) {
 }
 function tickBoardGlow(root, now) { applyBoardGlow(root, now); }
 
+/* Stats tab: This Game / Last Few Games charts, gauges, and donuts. */
+
+const STATS_BUCKETS = [
+  { key: "1–19",  min: 1,  max: 19,  color: "rgba(243,244,247,0.28)" },
+  { key: "20–39", min: 20, max: 39,  color: "#5dade2" },
+  { key: "40–59", min: 40, max: 59,  color: "#00d4f5" },
+  { key: "60–79", min: 60, max: 79,  color: "#8b7cf6" },
+  { key: "80–99", min: 80, max: 99,  color: "#c4b5fd" },
+  { key: "100–119", min: 100, max: 119, color: "#3dd68c" },
+  { key: "120–139", min: 120, max: 139, color: "#6ee7b7" },
+  { key: "140–179", min: 140, max: 179, color: "#e879f9" },
+  { key: "180", min: 180, max: 180, color: "#f0abfc" }
+];
+const STATS_HIT_COLORS = {
+  singles: "#5dade2",
+  doubles: "#c4b5fd",
+  triples: "#00d4f5",
+  bull: "#e879f9",
+  miss: "rgba(243,244,247,0.45)"
+};
+const STATS_CRICKET_COLORS = {
+  "15": "#5dade2", "16": "#00d4f5", "17": "#8b7cf6", "18": "#c4b5fd",
+  "19": "#3dd68c", "20": "#e879f9", "Bull": "#f0abfc"
+};
+
+function fmt(n, d) {
+  if (n == null || Number.isNaN(n)) return '—';
+  const x = Number(n);
+  return Number.isInteger(x) && d == null ? String(x) : x.toFixed(d == null ? (Math.abs(x) < 10 ? 2 : 1) : d);
+}
+
+function niceMax(vals, pad) {
+  const m = Math.max(0, ...vals.filter(v => v != null));
+  if (m === 0) return 10;
+  const p = m * (pad || 1.08);
+  const pow = Math.pow(10, Math.floor(Math.log10(p)));
+  const n = p / pow;
+  const step = n <= 1 ? 1 : n <= 1.5 ? 1.5 : n <= 2 ? 2 : n <= 3 ? 3 : n <= 5 ? 5 : 10;
+  return step * pow;
+}
+function ticks(max, n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) out.push((max * i) / n);
+  return out;
+}
+function xy(vals, w, h, max, left, right, top, bot) {
+  const L = left || 36, R = right || 12, T = top || 8, B = bot || 22;
+  const iw = Math.max(1, w - L - R), ih = Math.max(1, h - T - B);
+  const n = Math.max(1, vals.length - 1);
+  return vals.map((v, i) => ({
+    x: L + (i / n) * iw,
+    y: T + ih - ((v == null ? 0 : v) / (max || 1)) * ih,
+    v
+  }));
+}
+function pathLine(pts) {
+  let d = '', pen = false;
+  pts.forEach(p => {
+    if (p.v == null) { pen = false; return; }
+    d += (pen ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1);
+    pen = true;
+  });
+  return d;
+}
+function pathArea(pts, h, bot) {
+  const solid = pts.filter(p => p.v != null);
+  if (!solid.length) return '';
+  const B = h - (bot || 22);
+  return pathLine(solid) + ` L${solid[solid.length - 1].x.toFixed(1)} ${B} L${solid[0].x.toFixed(1)} ${B} Z`;
+}
+
+function lineChart(opts) {
+  const w = opts.w || 560, h = opts.h || 200;
+  const empty = opts.empty;
+  const series = opts.series || [];
+  const labels = opts.labels || [];
+  const dual = !!opts.right;
+  const all = series.filter(s => !s.right).flatMap(s => s.data || []);
+  const maxL = opts.max || niceMax(all);
+  const allR = series.filter(s => s.right).flatMap(s => s.data || []);
+  const maxR = opts.maxRight || (allR.length ? niceMax(allR) : maxL);
+  const leftPad = 36, rightPad = dual ? 36 : 12;
+  const tk = ticks(maxL, 4);
+  const tkR = ticks(maxR, 4);
+  let grid = '';
+  tk.forEach((t, i) => {
+    const y = 8 + ((h - 8 - 22) * (1 - i / 4));
+    grid += `<line class="grid" x1="${leftPad}" x2="${w - rightPad}" y1="${y}" y2="${y}"></line>`;
+    grid += `<text class="tick" x="${leftPad - 6}" y="${y + 3}" text-anchor="end">${opts.fmtL ? opts.fmtL(t) : (Math.abs(t - Math.round(t)) < 0.05 || t >= 10 ? String(Math.round(t)) : t.toFixed(1))}</text>`;
+    if (dual) {
+      const r = tkR[i];
+      grid += `<text class="tick" x="${w - rightPad + 6}" y="${y + 3}" text-anchor="start">${opts.fmtR ? opts.fmtR(r) : (Math.abs(r - Math.round(r)) < 0.05 || r >= 10 ? String(Math.round(r)) : r.toFixed(1))}</text>`;
+    }
+  });
+  const showN = Math.min(labels.length, 6);
+  const step = labels.length <= 6 ? 1 : Math.ceil((labels.length - 1) / (showN - 1));
+  labels.forEach((lab, i) => {
+    if (i % step !== 0 && i !== labels.length - 1) return;
+    const n = Math.max(1, labels.length - 1);
+    const x = leftPad + (i / n) * (w - leftPad - rightPad);
+    grid += `<text class="tick" x="${x}" y="${h - 6}" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  let body = '';
+  series.forEach(s => {
+    const data = s.data || [];
+    if (!data.length) return;
+    const max = s.right ? maxR : maxL;
+    const pts = xy(data, w, h, max, leftPad, rightPad, 8, 22);
+    if (s.area) {
+      body += `<path class="area" d="${pathArea(pts, h, 22)}" fill="${s.color}"></path>`;
+    }
+    body += `<path class="line" d="${pathLine(pts)}" stroke="${s.color}" style="--stroke:${s.color}"></path>`;
+    if (s.dots !== false && data.length <= 16) {
+      pts.forEach(p => {
+        if (p.v == null) return;
+        body += `<circle class="pt" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${s.color}"></circle>`;
+      });
+    }
+  });
+  const msg = empty ? `<div class="empty-msg">${esc(opts.emptyText || 'Play A Few Games To Fill This Chart')}</div>` : '';
+  return `<div class="plot" data-w="${w}" data-h="${h}">
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${grid}${body}</svg>${msg}
+  </div>`;
+}
+
+function stackedBars(opts) {
+  const w = opts.w || 480, h = opts.h || 200;
+  const cats = opts.cats || [];
+  const series = opts.series || [];
+  const empty = opts.empty;
+  const peaks = cats.map((_, i) => Math.max(0, ...series.map(s => s.data[i] || 0)));
+  const max = niceMax(peaks.length ? peaks : [0], 1.2) || 10;
+  const left = 36, right = 12, top = 20, bot = 28;
+  const iw = w - left - right, ih = h - top - bot;
+  const tk = ticks(max, 4);
+  let grid = '';
+  tk.forEach((t, i) => {
+    const y = top + ih * (1 - i / 4);
+    grid += `<line class="grid" x1="${left}" x2="${w - right}" y1="${y}" y2="${y}"></line>`;
+    grid += `<text class="tick" x="${left - 6}" y="${y + 3}" text-anchor="end">${t.toFixed(0)}</text>`;
+  });
+  const groupW = iw / Math.max(1, cats.length);
+  const barW = Math.min(36, groupW * 0.46);
+  const gap = 4;
+  const nS = Math.max(1, series.length);
+  const cluster = nS * barW + (nS - 1) * gap;
+  cats.forEach((c, i) => {
+    const cx = left + (i + 0.5) * groupW;
+    series.forEach((s, si) => {
+      const v = s.data[i] || 0;
+      const bh = (v / max) * ih;
+      const x = cx - cluster / 2 + si * (barW + gap);
+      const y = top + ih - bh;
+      const fill = (s.colors && s.colors[i]) || s.color;
+      grid += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW}" height="${Math.max(0, bh).toFixed(1)}" fill="${fill}" rx="3"></rect>`;
+      if (v > 0) {
+        grid += `<text class="tick" x="${(x + barW / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" style="fill:var(--ink);font-weight:700">${v}</text>`;
+      }
+    });
+    grid += `<text class="tick" x="${cx.toFixed(1)}" y="${h - 8}" text-anchor="middle">${esc(c)}</text>`;
+  });
+  const msg = empty ? `<div class="empty-msg">${esc(opts.emptyText || 'Play A Few Games To Fill This Chart')}</div>` : '';
+  return `<div class="plot"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${grid}</svg>${msg}</div>`;
+}
+
+let gaugeSeq = 0;
+function gaugeSvg(value, max, color, label, unit) {
+  /* Semicircle 0..max, always clamped. Large-arc is never used: a 180°
+   * sweep is ambiguous in SVG, and t>0.5 was wrongly treated as a full-circle
+   * large arc, which drew the long way around and clipped at the viewBox. */
+  const raw = Math.max(0, Number(value) || 0);
+  const m = Math.max(1, Number(max) || 100);
+  const t = Math.max(0, Math.min(1, raw / m));
+  const pad = 16, r = 54, sw = 9;
+  const cx = pad + r + sw / 2, cy = pad + r + sw / 2;
+  const viewW = cx * 2, viewH = cy + sw / 2 + pad * 0.6;
+  const start = Math.PI, mid = Math.PI * 1.5, end = Math.PI * 2;
+  const a = start + t * Math.PI;
+  const pt = ang => [cx + r * Math.cos(ang), cy + r * Math.sin(ang)];
+  const [sx, sy] = pt(start), [mx, my] = pt(mid), [ex, ey] = pt(end), [vx, vy] = pt(a);
+  const A = (x, y) => `A ${r} ${r} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`;
+  // Two quarter-arcs for a reliable top semicircle (exactly 180° is unsafe as one arc).
+  const track = `M ${sx.toFixed(2)} ${sy.toFixed(2)} ${A(mx, my)} ${A(ex, ey)}`;
+  let arc = "";
+  if (t > 0) {
+    arc = `M ${sx.toFixed(2)} ${sy.toFixed(2)}`;
+    if (t > 0.5) arc += ` ${A(mx, my)}`;
+    arc += ` ${A(vx, vy)}`;
+  }
+  const num = unit === "%" ? fmt(raw, raw % 1 ? 1 : 0) + "%" : fmt(raw, raw < 10 && raw % 1 ? 2 : 0);
+  const glowId = "gglow-" + (++gaugeSeq);
+  return `<div class="gauge">
+    <svg viewBox="0 0 ${viewW.toFixed(1)} ${viewH.toFixed(1)}" aria-hidden="true" overflow="visible">
+      <defs>
+        <filter id="${glowId}" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="blur"></feGaussianBlur>
+          <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+        </filter>
+      </defs>
+      <path d="${track}" fill="none" stroke="color-mix(in srgb, var(--primary-text-color, #fff) 14%, transparent)" stroke-width="${sw}" stroke-linecap="round"></path>
+      ${arc ? `<path d="${arc}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" filter="url(#${glowId})"></path>` : ""}
+      <text x="${cx.toFixed(1)}" y="${(cy - 4).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="26" font-weight="800" font-family="inherit" letter-spacing="-0.05em">${esc(num)}</text>
+    </svg>
+    <div class="g-lab">${esc(label)}</div>
+  </div>`;
+}
+
+function spark(label, value, series, color) {
+  const data = series && series.length ? series : [0, 0, 0, 0, 0, 0];
+  const max = niceMax(data, 1.2) || 1;
+  const w = 200, h = 70;
+  const pts = xy(data, w, h, max, 0, 0, 6, 0);
+  const dLine = pathLine(pts);
+  const dArea = pathArea(pts, h, 0);
+  return `<div class="spark">
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${dArea}" fill="${color}" opacity="0.28"></path>
+      <path d="${dLine}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"></path>
+    </svg>
+    <div class="k">${esc(label)}</div>
+    <div class="v" style="color:${color};text-shadow:0 0 16px color-mix(in srgb, ${color} 40%, transparent)">${esc(value)}</div>
+  </div>`;
+}
+
+function distBars(counts, buckets, empty) {
+  const max = Math.max(1, ...counts);
+  const cols = buckets.map((b, i) => {
+    const n = counts[i] || 0;
+    const h = empty ? 6 : Math.max(n ? 14 : 6, Math.round((n / max) * 86));
+    const val = empty ? '' : `<div class="val">${n}</div>`;
+    return `<div class="bar-col">
+      ${val}
+      <div class="shaft" style="height:${h}%;background:${b.color};--bar:${b.color};${empty ? 'opacity:.22;box-shadow:none' : ''}"></div>
+      <div class="lab">${esc(b.key)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="plot"><div class="bars">${cols}</div></div>`;
+}
+
+function bucketCounts(visits, buckets) {
+  return buckets.map(b => visits.filter(v => v >= b.min && v <= b.max).length);
+}
+
+function legend(items) {
+  return `<div class="legend">${items.map(it => `<span style="color:${it.color}"><i></i>${esc(it.label)}</span>`).join('')}</div>`;
+}
+
+
+const CHART_BG = [18, 20, 26];
+const MIN_CONTRAST = 4.2;
+const NAMED_COLORS = {
+  red: "#ff0000", blue: "#0000ff", green: "#00ff00", yellow: "#ffff00",
+  purple: "#8000ff", orange: "#ff6000", cyan: "#00ffff", pink: "#ff0080",
+  white: "#ffffff", teal: "#00ffc0", lime: "#80ff00", gold: "#ffb000"
+};
+
+function parseHex(c) {
+  let t = String(c || "").trim().toLowerCase();
+  if (NAMED_COLORS[t]) t = NAMED_COLORS[t];
+  t = t.replace(/^#/, "");
+  if (t.length === 3) t = t.split("").map(ch => ch + ch).join("");
+  if (!/^[0-9a-f]{6}$/.test(t)) return [255, 255, 255];
+  return [parseInt(t.slice(0, 2), 16), parseInt(t.slice(2, 4), 16), parseInt(t.slice(4, 6), 16)];
+}
+function toHex(rgb) {
+  return "#" + rgb.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+function srgbLin(c) {
+  c = c / 255;
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+function lum(rgb) {
+  return 0.2126 * srgbLin(rgb[0]) + 0.7152 * srgbLin(rgb[1]) + 0.0722 * srgbLin(rgb[2]);
+}
+function contrastRatio(a, b) {
+  const hi = Math.max(lum(a), lum(b)), lo = Math.min(lum(a), lum(b));
+  return (hi + 0.05) / (lo + 0.05);
+}
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return [h, s, l];
+}
+function hslToRgb(h, s, l) {
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  let r, g, b;
+  if (s === 0) r = g = b = l;
+  else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function chartColor(color) {
+  /* Use the player's picked colour, lifting only when contrast on the dark page is too low (e.g. #0000ff). */
+  let rgb = parseHex(color);
+  let [h, s, l] = rgbToHsl(...rgb);
+  let guard = 0;
+  while (contrastRatio(rgb, CHART_BG) < MIN_CONTRAST && l < 0.82 && guard++ < 24) {
+    l = Math.min(0.82, l + 0.04);
+    if (s > 0.9 && l > 0.5) s = 0.85;
+    rgb = hslToRgb(h, s, l);
+  }
+  if (contrastRatio(rgb, CHART_BG) < MIN_CONTRAST) {
+    l = 0.72; s = Math.max(s, 0.08);
+    rgb = hslToRgb(h, s, l);
+  }
+  return toHex(rgb);
+}
+function shadeColor(color, deltaL) {
+  let [h, s, l] = rgbToHsl(...parseHex(color));
+  l = Math.max(0.28, Math.min(0.86, l + deltaL));
+  let out = hslToRgb(h, s, l);
+  if (contrastRatio(out, CHART_BG) < 3.2) {
+    l = Math.min(0.86, l + 0.08);
+    out = hslToRgb(h, s, l);
+  }
+  return toHex(out);
+}
+function seriesPair(playerColor) {
+  const main = chartColor(playerColor);
+  const l = rgbToHsl(...parseHex(main))[2];
+  const alt = l >= 0.64 ? shadeColor(main, -0.26) : shadeColor(main, 0.22);
+  return { main, alt };
+}
+function inkOf(player) {
+  return chartColor((player && player.color) || "#ffffff");
+}
+function pairOf(player) {
+  return seriesPair((player && player.color) || "#ffffff");
+}
+
+
+
+const BOGEY = { 169: 1, 168: 1, 166: 1, 165: 1, 163: 1, 162: 1, 159: 1 };
+const HIT_LABELS = [
+  ["singles", "Singles"],
+  ["doubles", "Doubles"],
+  ["triples", "Triples"],
+  ["bull", "Bull"],
+  ["miss", "Miss"]
+];
+const CRICKET_NUMS = ["15", "16", "17", "18", "19", "20", "Bull"];
+
+function hitKind(seg) {
+  const s = String(seg || "").toUpperCase();
+  if (s === "MISS" || s === "M" || s === "OUT" || s === "S0" || s === "UNKNOWN") return "miss";
+  if (s === "SB" || s === "DB" || s === "BULL") return "bull";
+  if (s.charAt(0) === "T") return "triples";
+  if (s.charAt(0) === "D") return "doubles";
+  return "singles";
+}
+function visitsFor(log, playerId) {
+  const who = String(playerId || "");
+  if (!who) return log || [];
+  return (log || []).filter(v => {
+    const vid = String(v.player_id || "");
+    if (vid) return vid === who;
+    return String(v.player || "") === who;
+  });
+}
+function visitStart(v) {
+  if (v.after == null) return null;
+  if (v.bust) return Number(v.after);
+  return Number(v.after) + Number(v.score || 0);
+}
+function checkoutable(rem, doubleOut) {
+  const n = Number(rem);
+  if (!n || n <= 0) return false;
+  if (!doubleOut) return n <= 170;
+  if (n === 50) return true;
+  if (n <= 40 && n % 2 === 0) return true;
+  if (n > 170 || BOGEY[n]) return false;
+  return n >= 2;
+}
+function first9Points(visits) {
+  let darts = 0, points = 0, done = false, frozen = 0;
+  const running = [];
+  visits.forEach(v => {
+    const segs = v.darts || [];
+    const n = v.dart_count || segs.length;
+    if (!done) {
+      for (let i = 0; i < n; i++) {
+        if (darts >= 9) break;
+        darts += 1;
+        if (!v.bust) {
+          const kind = hitKind(segs[i]);
+          // score of this dart: approximate from segment
+          points += dartScore(segs[i]);
+        }
+      }
+      if (darts >= 9) { done = true; frozen = darts ? points * 3 / 9 : 0; }
+    }
+    running.push(darts ? (done ? frozen : points * 3 / darts) : 0);
+  });
+  return { avg: darts ? (done ? frozen : points * 3 / darts) : 0, running, darts };
+}
+function dartScore(seg) {
+  const s = String(seg || "").toUpperCase();
+  if (s === "MISS" || s === "M" || s === "OUT" || s === "S0") return 0;
+  if (s === "SB" || s === "BULL") return 25;
+  if (s === "DB") return 50;
+  const m = { S: 1, D: 2, T: 3 }[s.charAt(0)];
+  const n = parseInt(s.slice(1), 10);
+  return m && n ? m * n : 0;
+}
+function summarizeVisits(visits, mode, start, doubleOut) {
+  let darts = 0, points = 0, best = 0, e180 = 0, e140 = 0, ton = 0;
+  let attempts = 0, hits = 0, highestCO = 0, cricketMarks = 0;
+  const scores = [], remaining = [], running = [];
+  const types = { singles: 0, doubles: 0, triples: 0, bull: 0, miss: 0 };
+  visits.forEach(v => {
+    const n = Number(v.dart_count || (v.darts || []).length);
+    const bust = !!v.bust;
+    const score = bust ? 0 : Number(v.score || 0);
+    darts += n;
+    points += score;
+    if (!bust) {
+      best = Math.max(best, score);
+      scores.push(score);
+      if (score >= 100) ton += 1;
+      if (score >= 140) e140 += 1;
+      if (score === 180) e180 += 1;
+    }
+    if (v.after != null) remaining.push(Number(v.after));
+    (v.darts || []).forEach(d => { types[hitKind(d)] = (types[hitKind(d)] || 0) + 1; });
+    const begin = visitStart(v);
+    if (mode === "x01" && begin != null && checkoutable(begin, doubleOut)) {
+      attempts += 1;
+      if (!bust && Number(v.after) === 0) {
+        hits += 1;
+        highestCO = Math.max(highestCO, begin);
+      }
+    }
+    cricketMarks += Number(v.marks || 0);
+    running.push(darts ? points * 3 / darts : 0);
+  });
+  const f9 = first9Points(visits);
+  let marksAfter = {};
+  for (let i = visits.length - 1; i >= 0; i--) {
+    if (visits[i].marks_after) { marksAfter = visits[i].marks_after; break; }
+  }
+  return {
+    darts, points, visits: visits.length,
+    threeDart: darts ? points * 3 / darts : 0,
+    first9: f9.avg,
+    first9Running: f9.running,
+    runningAvg: running,
+    checkoutAttempts: attempts,
+    checkoutHits: hits,
+    checkoutPct: attempts ? (100 * hits / attempts) : 0,
+    oneEighties: e180, oneForties: e140, tonPlus: ton,
+    bestVisit: best, highestCheckout: highestCO,
+    cricketMpr: darts ? cricketMarks * 3 / darts : 0,
+    cricketMarks, marksAfter,
+    visitScores: scores, remainingAfter: remaining,
+    hitTypes: types
+  };
+}
+
+function pieChart(opts) {
+  const items = (opts.items || []).map(it => ({
+    label: it.label,
+    value: Math.max(0, Number(it.value) || 0),
+    color: it.color
+  }));
+  const total = items.reduce((a, it) => a + it.value, 0);
+  const empty = opts.empty || total <= 0;
+  const pad = 16, inner = 200;
+  const w = inner + pad * 2, h = inner + pad * 2;
+  const cx = pad + inner / 2, cy = pad + inner / 2, R = 80, r = 48;
+  let paths = "";
+  if (empty) {
+    paths += `<circle cx="${cx}" cy="${cy}" r="${(R + r) / 2}" fill="none" stroke="color-mix(in srgb, var(--primary-text-color, #fff) 14%, transparent)" stroke-width="${R - r}"></circle>`;
+  } else {
+    let angle = -Math.PI / 2;
+    const TAU = Math.PI * 2;
+    items.forEach(it => {
+      if (!it.value) return;
+      const span = (it.value / total) * TAU;
+      const a2 = angle + span;
+      paths += donutSlice(cx, cy, R, r, angle, a2, it.color);
+      angle = a2;
+    });
+  }
+  const center = empty ? "" : (opts.center || String(Math.round(total)));
+  const sub = empty ? "" : (opts.centerSub || "");
+  const centerText = empty ? "" : (`<text x="${cx}" y="${cy + (sub ? -4 : 6)}" text-anchor="middle" fill="var(--ink)" font-size="26" font-weight="800" font-family="inherit" letter-spacing="-0.05em">${esc(center)}</text>` +
+    (sub ? `<text x="${cx}" y="${cy + 18}" text-anchor="middle" fill="var(--muted)" font-size="11" font-weight="600" font-family="inherit">${esc(sub)}</text>` : ""));
+  const visible = empty ? [] : items.filter(it => it.value > 0);
+  const leg = visible.map(it => {
+    const pct = total ? (100 * it.value / total) : 0;
+    const pctLab = (Math.abs(pct - Math.round(pct)) < 0.05 ? String(Math.round(pct)) : pct.toFixed(1)) + "%";
+    return `<span style="color:${it.color}"><i></i>${esc(it.label)}  ${pctLab}</span>`;
+  }).join("");
+  const msg = empty ? `<div class="empty-msg">${esc(opts.emptyText || "Nothing To Show Yet")}</div>` : "";
+  return `<div class="plot pie-plot">
+    <svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${paths}${centerText}</svg>
+    <div class="legend swatches">${leg}</div>
+    ${msg}
+  </div>`;
+}
+function donutSlice(cx, cy, R, r, a1, a2, color) {
+  const span = a2 - a1;
+  if (span >= Math.PI * 2 - 1e-6) {
+    return `<circle cx="${cx}" cy="${cy}" r="${(R + r) / 2}" fill="none" stroke="${color}" stroke-width="${R - r}" style="filter:drop-shadow(0 0 8px ${color})"></circle>`;
+  }
+  const large = span > Math.PI ? 1 : 0;
+  const p = (rad, ang) => [cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)];
+  const [x1, y1] = p(R, a1), [x2, y2] = p(R, a2);
+  const [x3, y3] = p(r, a2), [x4, y4] = p(r, a1);
+  const d = `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${r} ${r} 0 ${large} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z`;
+  return `<path d="${d}" fill="${color}" style="filter:drop-shadow(0 0 6px color-mix(in srgb, ${color} 50%, transparent))"></path>`;
+}
+
+function rangeItems(scores, buckets) {
+  return buckets.map(b => ({
+    label: b.key,
+    value: scores.filter(v => v >= b.min && v <= b.max).length,
+    color: b.color
+  }));
+}
+function hitItems(types, colors) {
+  return HIT_LABELS.map(([key, label]) => ({
+    label, value: (types && types[key]) || 0, color: colors[key]
+  }));
+}
+
+function panel(area, title, legendHtml, body) {
+  return `<div class="cell-${area}"><section class="stat-panel">
+    <div class="ph"><h2>${esc(title)}</h2>${legendHtml || ""}</div>
+    ${body}
+  </section></div>`;
+}
+
+function renderGameScope(data, selected, players, empty) {
+  const game = data.current_game || { visit_log: [], mode: "x01", start: 501, double_out: true, players: [] };
+  const mode = game.mode || "x01";
+  const isCricket = mode === "cricket";
+  const isX01 = mode === "x01";
+  const log = game.visit_log || [];
+  const buckets = STATS_BUCKETS;
+  const hitColors = STATS_HIT_COLORS;
+  const mine = visitsFor(log, selected.id);
+  const stats = summarizeVisits(mine, mode, game.start, !!game.double_out);
+  const pair = pairOf(selected);
+  const maxRound = Math.max(0, ...log.map(v => Number(v.round) || 0));
+  const visitLabels = [];
+  for (let i = 1; i <= Math.max(maxRound, empty ? 8 : 0); i++) visitLabels.push(String(i));
+  const visitEmpty = empty || !log.length;
+  const visitSeries = players.map(p => {
+    const by = {};
+    visitsFor(log, p.id).forEach(v => { by[v.round] = v.bust ? 0 : v.score; });
+    const dataPts = visitLabels.map(r => (by[r] == null ? null : by[r]));
+    return { data: visitEmpty ? [] : dataPts, color: inkOf(p), area: false, dots: true };
+  });
+  const visitChart = lineChart({
+    w: 640, h: 200, labels: visitLabels, empty: visitEmpty,
+    emptyText: "Visit Scores Appear Here After A Turn Ends",
+    max: 180,
+    series: visitSeries
+  });
+
+  const runLabels = visitsFor(log, selected.id).map(v => String(v.round));
+  const runEmpty = empty || !mine.length;
+  const runChart = lineChart({
+    w: 480, h: 200, labels: runEmpty ? ["1", "2", "3", "4", "5", "6"] : runLabels, empty: runEmpty,
+    emptyText: "A Running Average Appears After The First Visit",
+    max: 180,
+    series: [
+      { data: runEmpty ? [] : stats.runningAvg, color: pair.main, dots: true },
+      { data: runEmpty ? [] : stats.first9Running, color: pair.alt, dots: true }
+    ]
+  });
+
+  let raceChart = "";
+  if (isX01 || empty) {
+    const start = game.start || 501;
+    const raceLabels = ["Start"];
+    for (let i = 1; i <= Math.max(maxRound, empty ? 8 : 0); i++) raceLabels.push(String(i));
+    const raceSeries = players.map(p => {
+      const by = {};
+      visitsFor(log, p.id).forEach(v => { by[v.round] = v.after; });
+      let last = start;
+      const pts = [start];
+      for (let r = 1; r <= Math.max(maxRound, 0); r++) {
+        if (by[r] != null) last = by[r];
+        pts.push(last);
+      }
+      return { data: visitEmpty ? [] : pts, color: inkOf(p), area: false, dots: true };
+    });
+    raceChart = lineChart({
+      w: 480, h: 200, labels: raceLabels, empty: visitEmpty,
+      emptyText: "The Race To Zero Starts With The First Visit",
+      max: start,
+      series: raceSeries
+    });
+  }
+
+  const gauges = `<div class="gauges">
+    ${gaugeSvg(stats.threeDart, 120, pair.main, "3-Dart Average")}
+    ${gaugeSvg(stats.checkoutPct, 100, pair.alt, "Checkout %", "%")}
+  </div>`;
+
+  const sparks = `<div class="sparks">
+    ${spark("180s", fmt(stats.oneEighties, 0), stats.visitScores, pair.main)}
+    ${spark("140+", fmt(stats.oneForties, 0), stats.visitScores, pair.alt)}
+    ${spark("100+", fmt(stats.tonPlus, 0), stats.visitScores, shadeColor(pair.main, 0.1))}
+    ${spark("Best Visit", fmt(stats.bestVisit, 0), stats.visitScores, shadeColor(pair.alt, 0.08))}
+    ${spark("Darts Thrown", fmt(stats.darts, 0), stats.runningAvg, pair.main)}
+    ${spark("Highest Checkout", fmt(stats.highestCheckout, 0), stats.remainingAfter, pair.alt)}
+  </div>`;
+
+  const hitPie = pieChart({
+    items: hitItems(stats.hitTypes, hitColors),
+    empty: empty || !stats.darts,
+    emptyText: "Hit Types Appear After The First Dart",
+    center: empty || !stats.darts ? "" : String(stats.darts),
+    centerSub: "Darts"
+  });
+  const rangePie = pieChart({
+    items: rangeItems(stats.visitScores, buckets),
+    empty: empty || !stats.visitScores.length,
+    emptyText: "Visit Ranges Appear After A Turn Ends",
+    center: empty || !stats.visitScores.length ? "" : String(stats.visitScores.length),
+    centerSub: "Visits"
+  });
+  const checkPie = pieChart({
+    items: [
+      { label: "Hit", value: stats.checkoutHits, color: pair.main },
+      { label: "Miss", value: Math.max(0, stats.checkoutAttempts - stats.checkoutHits), color: "#8b7cf6" }
+    ],
+    empty: empty || !stats.checkoutAttempts,
+    emptyText: "Checkout Attempts Appear When A Finish Is On",
+    center: stats.checkoutAttempts ? fmt(stats.checkoutPct, stats.checkoutPct % 1 ? 1 : 0) + "%" : "",
+    centerSub: stats.checkoutAttempts ? `${stats.checkoutHits} Of ${stats.checkoutAttempts}` : ""
+  });
+
+  let cricketPie = "";
+  if (isCricket) {
+    const marks = stats.marksAfter || {};
+    const colors = STATS_CRICKET_COLORS;
+    const items = CRICKET_NUMS.map(n => ({
+      label: n,
+      value: Number(n === "Bull" ? (marks["25"] || marks["Bull"] || 0) : (marks[n] || 0)),
+      color: colors[n]
+    }));
+    cricketPie = panel("pcricket", "Cricket Marks By Number", "", pieChart({
+      items,
+      empty: empty || !items.some(it => it.value),
+      emptyText: "Marks Appear As Numbers Open",
+      center: String(stats.cricketMarks || 0),
+      centerSub: "Marks"
+    }));
+  }
+
+  return panel("visits", "Visit Scores", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), visitChart)
+    + panel("running", "Running 3-Dart", legend([{ color: pair.main, label: "3-Dart Average" }, { color: pair.alt, label: "First 9" }]), runChart)
+    + (isX01 || empty ? panel("race", "Remaining Score", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), raceChart) : "")
+    + panel("gauges", "This Game", "", gauges)
+    + panel("sparks", "Marks This Game", "", sparks)
+    + panel("phit", "Hit Distribution", "", hitPie)
+    + panel("prange", "Visit Score Ranges", "", rangePie)
+    + (isX01 || empty ? panel("pcheck", "Checkout Success", "", checkPie) : "")
+    + cricketPie;
+}
+
+function renderSessionScope(data, selected, players, empty) {
+  const games = data.recent_games || [];
+  const buckets = STATS_BUCKETS;
+  const hitColors = STATS_HIT_COLORS;
+  const pair = pairOf(selected);
+  const cats = games.map((_, i) => "Game " + (i + 1));
+  const sessionEmpty = empty || !games.length;
+  const hasCricket = games.some(g => g.mode === "cricket");
+  const hasX01 = empty || games.some(g => (g.mode || "x01") === "x01");
+
+  function playerGameStats(game, player) {
+    const visits = visitsFor(game.visit_log, player.id);
+    return summarizeVisits(visits, game.mode || "x01", game.start, !!game.double_out);
+  }
+
+  const avgChart = stackedBars({
+    w: 560, h: 200, cats: sessionEmpty ? ["Game 1", "Game 2", "Game 3", "Game 4"] : cats, empty: sessionEmpty,
+    emptyText: "Play A Few Games To Fill This Chart",
+    series: players.map(p => ({
+      data: games.map(g => Math.round(playerGameStats(g, p).threeDart * 10) / 10),
+      color: inkOf(p)
+    }))
+  });
+  const firstChart = stackedBars({
+    w: 560, h: 200, cats: sessionEmpty ? ["Game 1", "Game 2", "Game 3", "Game 4"] : cats, empty: sessionEmpty,
+    emptyText: "Play A Few Games To Fill This Chart",
+    series: players.map(p => ({
+      data: games.map(g => Math.round(playerGameStats(g, p).first9 * 10) / 10),
+      color: inkOf(p)
+    }))
+  });
+  const coChart = stackedBars({
+    w: 560, h: 200, cats: sessionEmpty ? ["Game 1", "Game 2", "Game 3", "Game 4"] : cats, empty: sessionEmpty,
+    emptyText: "Play A Few Games To Fill This Chart",
+    series: players.map(p => ({
+      data: games.map(g => Math.round(playerGameStats(g, p).checkoutPct * 10) / 10),
+      color: inkOf(p)
+    }))
+  });
+  const bestChart = stackedBars({
+    w: 560, h: 200, cats: sessionEmpty ? ["Game 1", "Game 2", "Game 3", "Game 4"] : cats, empty: sessionEmpty,
+    emptyText: "Play A Few Games To Fill This Chart",
+    series: players.map(p => ({
+      data: games.map(g => playerGameStats(g, p).bestVisit),
+      color: inkOf(p)
+    }))
+  });
+
+  const wins = {};
+  players.forEach(p => { wins[p.id] = 0; });
+  games.forEach(g => {
+    if (g.winner_id && wins[g.winner_id] != null) wins[g.winner_id] += 1;
+    else if (g.winner) {
+      const pl = players.find(p => p.name === g.winner);
+      if (pl) wins[pl.id] += 1;
+    }
+  });
+  const winItems = players.map(p => ({ label: p.name, value: wins[p.id] || 0, color: inkOf(p) }));
+  const winPie = pieChart({
+    items: winItems,
+    empty: sessionEmpty || !players.some(p => wins[p.id]),
+    emptyText: "Wins Appear After A Game Is Finished",
+    center: sessionEmpty ? "" : String(games.length),
+    centerSub: "Games"
+  });
+
+  const allMine = games.flatMap(g => visitsFor(g.visit_log, selected.id));
+  const mixedMode = games.length && games.every(g => g.mode === games[0].mode) ? games[0].mode : "x01";
+  const sess = summarizeVisits(allMine, mixedMode, 501, true);
+  const hitPie = pieChart({
+    items: hitItems(sess.hitTypes, hitColors),
+    empty: sessionEmpty || !sess.darts,
+    emptyText: "Hit Types Appear After The First Dart",
+    center: sess.darts ? String(sess.darts) : "",
+    centerSub: "Darts"
+  });
+  const rangePie = pieChart({
+    items: rangeItems(sess.visitScores, buckets),
+    empty: sessionEmpty || !sess.visitScores.length,
+    emptyText: "Visit Ranges Appear After A Turn Ends",
+    center: sess.visitScores.length ? String(sess.visitScores.length) : "",
+    centerSub: "Visits"
+  });
+  const checkPie = pieChart({
+    items: [
+      { label: "Hit", value: sess.checkoutHits, color: pair.main },
+      { label: "Miss", value: Math.max(0, sess.checkoutAttempts - sess.checkoutHits), color: "#8b7cf6" }
+    ],
+    empty: sessionEmpty || !sess.checkoutAttempts,
+    emptyText: "Checkout Attempts Appear When A Finish Is On",
+    center: sess.checkoutAttempts ? fmt(sess.checkoutPct, sess.checkoutPct % 1 ? 1 : 0) + "%" : "",
+    centerSub: sess.checkoutAttempts ? `${sess.checkoutHits} Of ${sess.checkoutAttempts}` : ""
+  });
+
+  const h2hRows = games.map((g, i) => {
+    const winner = g.winner || "—";
+    const wp = players.find(p => p.id === g.winner_id || p.name === g.winner);
+    const color = wp ? inkOf(wp) : "var(--muted)";
+    return `<div class="h2h-row"><span class="h2h-game">Game ${i + 1}</span><span class="h2h-win" style="color:${color}">${esc(winner)}</span></div>`;
+  }).join("");
+  const scoreline = players.map(p => `<span style="color:${inkOf(p)}">${esc(p.name)} ${wins[p.id] || 0}</span>`).join('<span class="h2h-dash">–</span>');
+  const h2h = sessionEmpty
+    ? `<div class="plot"><div class="empty-msg">Head-To-Head Appears After A Game Is Finished</div></div>`
+    : `<div class="h2h"><div class="h2h-score">${scoreline}</div>${h2hRows}</div>`;
+
+  let cricketBars = "";
+  let cricketPie = "";
+  if (hasCricket) {
+    cricketBars = panel("mpr", "Cricket MPR", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), stackedBars({
+      w: 560, h: 200, cats, empty: sessionEmpty,
+      series: players.map(p => ({
+        data: games.map(g => g.mode === "cricket" ? Math.round(playerGameStats(g, p).cricketMpr * 100) / 100 : 0),
+        color: inkOf(p)
+      }))
+    }));
+    const marks = {};
+    CRICKET_NUMS.forEach(n => { marks[n] = 0; });
+    games.filter(g => g.mode === "cricket").forEach(g => {
+      const st = playerGameStats(g, selected);
+      const m = st.marksAfter || {};
+      CRICKET_NUMS.forEach(n => {
+        marks[n] += Number(n === "Bull" ? (m["25"] || m["Bull"] || 0) : (m[n] || 0));
+      });
+    });
+    const colors = STATS_CRICKET_COLORS;
+    cricketPie = panel("pcricket", "Cricket Marks By Number", "", pieChart({
+      items: CRICKET_NUMS.map(n => ({ label: n, value: marks[n], color: colors[n] })),
+      empty: !CRICKET_NUMS.some(n => marks[n]),
+      emptyText: "Marks Appear As Numbers Open",
+      center: String(Object.values(marks).reduce((a, b) => a + b, 0)),
+      centerSub: "Marks"
+    }));
+  }
+
+  return panel("avg", "3-Dart Average", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), avgChart)
+    + panel("first9", "First 9 Average", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), firstChart)
+    + (hasX01 ? panel("checkout", "Checkout %", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), coChart) : "")
+    + panel("best", "Best Visit", legend(players.map(p => ({ color: inkOf(p), label: p.name }))), bestChart)
+    + panel("h2h", "Head To Head", "", h2h)
+    + panel("winpie", "Win Share", "", winPie)
+    + panel("phit", "Hit Distribution", "", hitPie)
+    + panel("prange", "Visit Score Ranges", "", rangePie)
+    + (hasX01 ? panel("pcheck", "Checkout Success", "", checkPie) : "")
+    + cricketBars + cricketPie;
+}
+
+
+function statsPlayerId(p) {
+  if (!p) return "";
+  return String(p.profile_id || p.player_id || p.id || p.name || "");
+}
+
+function statsNormalizeVisit(v) {
+  if (!v || typeof v !== "object") return null;
+  const darts = Array.isArray(v.darts)
+    ? v.darts.map(d => (d && typeof d === "object") ? (d.segment || "") : String(d || ""))
+    : [];
+  return {
+    player: v.player || v.name || "",
+    player_id: String(v.player_id || v.profile_id || v.id || ""),
+    round: v.round,
+    darts,
+    score: v.score,
+    bust: !!v.bust,
+    after: v.after,
+    dart_count: v.dart_count != null ? v.dart_count : darts.length,
+    marks: v.marks,
+    marks_after: v.marks_after
+  };
+}
+
+function statsOpenVisit(game) {
+  const state = String((st(E.game) || {}).state || game.status || "").toLowerCase();
+  if (state !== "playing") return null;
+  const turn = game.darts || [];
+  if (!Array.isArray(turn) || !turn.length) return null;
+  const segs = turn.map(d => (d && typeof d === "object") ? (d.segment || "") : String(d || ""));
+  const cur = (game.players || [])[game.current_player] || {};
+  return {
+    player: game.current_player_name || cur.name || "",
+    player_id: String(cur.profile_id || cur.player_id || cur.id || ""),
+    round: game.round,
+    darts: segs,
+    score: game.turn_score != null ? game.turn_score : game.turn_total,
+    bust: !!game.bust,
+    after: cur.score,
+    dart_count: segs.length,
+    marks: cur.marks ? undefined : undefined,
+    marks_after: cur.marks || undefined
+  };
+}
+
+function statsCurrentGame() {
+  const a = gs() || {};
+  const log = (a.history || []).map(statsNormalizeVisit).filter(Boolean);
+  const open = statsOpenVisit(a);
+  if (open) log.push(open);
+  return {
+    game_id: a.game_id,
+    mode: a.game || a.mode || "x01",
+    start: a.start,
+    double_out: !!a.double_out,
+    winner: a.winner,
+    winner_id: a.winner_id,
+    visit_log: log,
+    players: (a.players || []).map((p, i) => ({
+      player_id: statsPlayerId(p),
+      name: p.name,
+      color: p.color || pcol(i),
+      score: p.score,
+      win: !!p.win || p.name === a.winner || statsPlayerId(p) === a.winner_id
+    }))
+  };
+}
+
+function statsRecentGames() {
+  const recent = (attr(E.roster) || {}).recent_games;
+  if (!Array.isArray(recent)) return [];
+  return recent.map(g => ({
+    game_id: g.game_id,
+    mode: g.mode || "x01",
+    start: g.start,
+    double_out: !!g.double_out,
+    winner: g.winner,
+    winner_id: g.winner_id,
+    visits: g.visits,
+    visit_log: (g.visit_log || []).map(statsNormalizeVisit).filter(Boolean),
+    players: (g.players || []).map(p => ({
+      player_id: statsPlayerId(p),
+      name: p.name,
+      color: p.color,
+      score: p.score,
+      win: !!p.win
+    }))
+  }));
+}
+
+function statsCollectPlayers(game, recent) {
+  const map = new Map();
+  const add = (p, i) => {
+    const id = statsPlayerId(p);
+    if (!id) return;
+    const prev = map.get(id) || {};
+    map.set(id, {
+      id,
+      name: p.name || prev.name || id,
+      color: p.color || prev.color || pcol(i || map.size)
+    });
+  };
+  (game.players || []).forEach(add);
+  (recent || []).forEach(g => (g.players || []).forEach(add));
+  if (!map.size) rosterEntries().forEach(add);
+  return Array.from(map.values());
+}
+
+function sectionStats() {
+  const game = statsCurrentGame();
+  const recent = statsRecentGames();
+  const players = statsCollectPlayers(game, recent);
+  const scope = (typeof window !== "undefined" && window.__dartsStatsScope === "session") ? "session" : "game";
+  const selectedId = (typeof window !== "undefined" && window.__dartsStatsPlayer) || "";
+  const selected = players.find(p => p.id === selectedId) || players[0] || { id: "player", name: "Player", color: "#ffffff" };
+  const nGames = recent.length;
+  const sessionLabel = nGames ? "Last " + nGames + " Games" : "Last Few Games";
+  const emptyGame = !game.visit_log.length;
+  const emptySession = !recent.length;
+
+  const picker = players.length > 1 ? `
+      <div class="player-switch" role="group" aria-label="Player">
+        <span class="kicker">Viewing</span>
+        <div class="choices">
+          ${players.map(p => {
+            const ink = inkOf(p);
+            const on = p.id === selected.id ? " on" : "";
+            return `<button type="button" class="player-btn${on}" ${da("statsPlayer", p.id)} style="--pc:${ink}">${esc(p.name)}</button>`;
+          }).join("")}
+        </div>
+      </div>` : "";
+
+  const scopeSwitch = `
+      <div class="player-switch scope-switch" role="group" aria-label="Scope">
+        <span class="kicker">Scope</span>
+        <div class="choices">
+          <button type="button" class="scope-btn${scope === "game" ? " on" : ""}" ${da("statsScope", "game")} style="--pc:var(--neon, #7fd4f5)">This Game</button>
+          <button type="button" class="scope-btn${scope === "session" ? " on" : ""}" ${da("statsScope", "session")} style="--pc:var(--neon, #7fd4f5)">${esc(sessionLabel)}</button>
+        </div>
+      </div>`;
+
+  const pack = {
+    current_game: game,
+    recent_games: recent,
+    players,
+    mode: (scope === "session" ? emptySession : emptyGame) ? "empty" : "live"
+  };
+  const body = scope === "session"
+    ? renderSessionScope(pack, selected, players, emptySession)
+    : renderGameScope(pack, selected, players, emptyGame);
+
+  return `
+      <div class="preview-flag stats-flag">
+        <div>
+          <div class="kicker">Darts Arena</div>
+          <h1>Stats</h1>
+          <p class="lede">Visit By Visit This Game, Or Over The Last Few Games.</p>
+        </div>
+        <div class="flag-side">
+          ${scopeSwitch}
+          ${picker}
+        </div>
+      </div>
+      <div class="stats-grid scope-${scope}${pack.mode === "empty" ? " is-empty" : ""}">${body}</div>`;
+}
+
 function sectionSettings() {
   const on = st(E.sw).state === 'on';
   const connected = st(E.conn).state === 'on';
@@ -1783,6 +2790,7 @@ function renderApp() {
     const tab = tabName();
     const body = {
       game: sectionGame,
+      stats: sectionStats,
       players: sectionPlayers,
       ring: sectionRing,
       room: sectionRoom,

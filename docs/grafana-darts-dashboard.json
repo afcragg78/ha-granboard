@@ -72,9 +72,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -83,7 +84,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -149,7 +153,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {
@@ -211,7 +216,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {
@@ -273,7 +279,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {
@@ -335,7 +342,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {
@@ -379,9 +387,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -390,7 +399,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -438,9 +450,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -449,7 +462,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -497,9 +513,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -508,7 +525,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -556,9 +576,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": [
@@ -606,7 +627,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -666,9 +690,10 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 12,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": true,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -677,7 +702,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -725,10 +753,11 @@
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "fillOpacity": 60,
-            "showPoints": "never",
+            "showPoints": "always",
             "spanNulls": false,
             "barAlignment": 0,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "pointSize": 8
           }
         },
         "overrides": []
@@ -737,7 +766,10 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "tooltip": {
           "mode": "multi"
@@ -803,7 +835,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {
@@ -865,7 +898,8 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "legend": {}
       },
       "targets": [
         {

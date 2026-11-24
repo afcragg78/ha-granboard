@@ -32,7 +32,7 @@ STATUS_FINISHED = "finished"
 
 CRICKET_NUMBERS = (20, 19, 18, 17, 16, 15, 25)
 DARTS_PER_TURN = 3
-HISTORY_LIMIT = 60
+HISTORY_LIMIT = 120
 UNDO_LIMIT = 300
 DEFAULT_COUNT_UP_ROUNDS = 8
 
@@ -123,6 +123,34 @@ def _player_specs(players: list[object] | None, colors: list[object] | None) -> 
             continue
         specs.append({"name": name, "color": color, "profile_id": profile_id})
     return specs or [{"name": "Player 1", "color": player_color(0), "profile_id": None}]
+
+
+
+def build_visit(
+    player: Player,
+    *,
+    game: str | None,
+    round_no: int,
+    turn: list[dict[str, Any]],
+    score: int,
+    bust: bool,
+    after: int,
+) -> dict[str, Any]:
+    """One completed (or just-finished) visit, as stored in ``history`` and the career log."""
+    entry: dict[str, Any] = {
+        "player": player.name,
+        "player_id": player.profile_id,
+        "round": round_no,
+        "darts": [d["segment"] for d in turn],
+        "score": score,
+        "bust": bust,
+        "after": after,
+        "dart_count": len(turn),
+    }
+    if game == GAME_CRICKET:
+        entry["marks"] = sum(int(d.get("marks") or 0) for d in turn)
+        entry["marks_after"] = dict(player.marks)
+    return entry
 
 
 class GameError(ValueError):
@@ -378,15 +406,15 @@ class Game:
         player.turns += 1
         player.best_turn = max(player.best_turn, total)
         self.history.append(
-            {
-                "player": player.name,
-                "player_id": player.profile_id,
-                "round": self.round,
-                "darts": [d["segment"] for d in self.turn],
-                "score": total,
-                "bust": self.turn_bust,
-                "after": player.score,
-            }
+            build_visit(
+                player,
+                game=self.game,
+                round_no=self.round,
+                turn=self.turn,
+                score=total,
+                bust=self.turn_bust,
+                after=player.score,
+            )
         )
         if len(self.history) > HISTORY_LIMIT:
             del self.history[0]
@@ -420,17 +448,18 @@ class Game:
         if not self.turn:
             return None
         last = self.turn[-1]
-        return {
-            "player": self.player.name,
-            "player_id": self.player.profile_id,
-            "round": self.round,
-            "score": self.turn_total(),
-            "bust": self.turn_bust,
-            "darts": [d["segment"] for d in self.turn],
-            "dart_count": len(self.turn),
-            "last_dart_score": int(last.get("score") or 0),
-            "last_dart_segment": last.get("segment"),
-        }
+        entry = build_visit(
+            self.player,
+            game=self.game,
+            round_no=self.round,
+            turn=self.turn,
+            score=self.turn_total(),
+            bust=self.turn_bust,
+            after=self.player.score,
+        )
+        entry["last_dart_score"] = int(last.get("score") or 0)
+        entry["last_dart_segment"] = last.get("segment")
+        return entry
 
     def last_history_visit_dict(self) -> dict[str, Any] | None:
         """The visit that was just appended by ``next_player``."""
@@ -505,7 +534,7 @@ class Game:
                 }
                 for i, p in enumerate(self.players)
             ],
-            "history": list(self.history[-20:]),
+            "history": list(self.history),
             "last_awards": list(self.last_awards),
             "can_undo": self.can_undo,
         }

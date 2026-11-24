@@ -35,7 +35,7 @@ Home Assistant custom integration for the **Granboard 3** Bluetooth dartboard. I
 - **WLED And Lights** – fire automations from hits, turns, and awards to light up the room.
 - **Custom Sounds** – pick your own MP3 for each hit, award, and game event in Configure.
 - **App Kill Switch** – release the board with one tap so the official Granboard app can connect.
-- **Darts Arena Card** – a ready-made panel dashboard for live scoring, the dartboard, New Game, ring controls and optional room lights. See [Darts Arena Card](#darts-arena-card).
+- **Darts Arena Card** – a ready-made panel dashboard for live scoring, the dartboard, a Stats tab (this game and the last few games), New Game, ring controls and optional room lights. See [Darts Arena Card](#darts-arena-card).
 
 **This project is unofficial and is not affiliated with, endorsed by, or supported by Granboard / GRAN Darts.** The Bluetooth protocol is community reverse-engineered.
 
@@ -75,7 +75,7 @@ To update: HACS > Granboard > **Update**, then restart Home Assistant.
 
 ## Darts Arena Card
 
-The **Darts Arena** card is a single native Lovelace card (`custom:darts-arena-card`) for playing and watching a game. It does not use button-card, card-mod, or other custom Lovelace cards.
+The **Darts Arena** card is a single native Lovelace card (`custom:darts-arena-card`) for playing and watching a game, plus a Stats tab for this game and the last few games. It does not use button-card, card-mod, or other custom Lovelace cards.
 
 ![Darts Arena during a game](images/darts-arena/playing.jpg)
 
@@ -130,7 +130,7 @@ The glow behind the dartboard **recreates** the LED ring's current effect, palet
 | Select **Ring Palette**, Numbers **Ring Speed** / **Ring Intensity**, Text **Ring Color 2** | LED Ring effect settings (configuration). |
 | Select **Sound Theme** | Sound pack folder under `/config/www/granboard/sounds/<theme>/`, or Off to use only the Configure file boxes. The choice is restored after a restart. |
 | Sensor **Game** | `idle`, `playing`, or `finished`. The attributes are the whole game (below). They are excluded from the recorder. |
-| Sensor **Players** | How many saved profiles you have. Attributes list each profile (id, name, colour, initials, avatar, career stats) and tonight's lineup. Excluded from the recorder. |
+| Sensor **Players** | How many saved profiles you have. Attributes list each profile (id, name, colour, initials, avatar, career stats), tonight's lineup, and `recent_games` (the last five finished games with per-player averages, checkout stats, and a `visit_log` for the Stats tab). Excluded from the recorder. |
 | Per-player **3-Dart Average**, **First 9 Average**, **Checkout Percent**, **180s**, **Ton Plus**, **Games Played**, **Games Won**, **Cricket MPR**, **Highest Checkout** | Numeric career stats for each saved profile (Influx-friendly). Example: `sensor.game_room_granboard_3s_andrew_3_dart_average`. They update when a game finishes or a finish is undone. |
 | Sensor **Last Visit Score** | The turn total when a visit ends (0 on a bust), with player, player id and bust as attributes. |
 | Sensor **Last Dart Score** | The score of the last dart in that visit. |
@@ -186,7 +186,7 @@ All take an optional `device_id` when you have more than one board.
 
 ### Game Sensor Attributes
 
-`game`, `game_id`, `start`, `double_out`, `rounds`, `round`, `current_player`, `current_player_name`, `darts` (this turn), `darts_left`, `turn_score`, `turn_complete`, `bust`, `winner`, `checkout`, `players` (each with `name`, `profile_id`, `score`, Cricket `marks`, Around The Clock `target`, and `stats`: `darts`, `turns`, `ppd`, `ppr`, `best_turn`, Cricket `mpr`), `history` (last 20 turns, including `player_id`), `last_awards`, `can_undo`.
+`game`, `game_id`, `start`, `double_out`, `rounds`, `round`, `current_player`, `current_player_name`, `darts` (this turn), `darts_left`, `turn_score`, `turn_complete`, `bust`, `winner`, `checkout`, `players` (each with `name`, `profile_id`, `score`, Cricket `marks`, Around The Clock `target`, and `stats`: `darts`, `turns`, `ppd`, `ppr`, `best_turn`, Cricket `mpr`), `history` (every visit in the current game, including `player_id`, `dart_count`, and Cricket `marks` / `marks_after`), `last_awards`, `can_undo`.
 
 ## Board Lights
 

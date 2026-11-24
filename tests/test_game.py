@@ -236,3 +236,42 @@ def test_end_game_and_persistence_roundtrip():
 def test_ton_80_is_not_also_three_in_a_bed():
     assert throw(x01(), "T20", "T20", "T20") == ["ton_80"]
     assert throw(x01(), "T19", "T19", "T19") == ["high_ton", "three_in_a_bed"]
+
+
+def test_visit_records_include_dart_count():
+    g = x01()
+    throw(g, "T20", "T20", "S20")
+    g.next_player()
+    visit = g.history[0]
+    assert visit["score"] == 140
+    assert visit["after"] == 361
+    assert visit["dart_count"] == 3
+    assert visit["player"] == "A"
+    assert "marks" not in visit  # X01 should not carry cricket fields
+
+
+def test_as_dict_publishes_more_than_twenty_visits():
+    g = x01()
+    # 22 completed visits on A, with B taking empty turns in between, is overkill.
+    # Faster: complete 25 visits by alternating single-dart turns.
+    for _ in range(25):
+        throw(g, "S1")
+        g.next_player()
+    assert len(g.history) == 25
+    published = g.as_dict()["history"]
+    assert len(published) == 25
+    assert published[0]["score"] == 1
+    assert published[-1]["dart_count"] == 1
+
+
+def test_cricket_history_includes_marks_and_marks_after():
+    g = Game()
+    g.new_game("cricket", ["A", "B"])
+    throw(g, "T20", "S19", "S18")
+    g.next_player()
+    visit = g.history[0]
+    assert visit["dart_count"] == 3
+    assert visit["marks"] == 5  # T20 = 3, S19 = 1, S18 = 1
+    assert visit["marks_after"]["20"] == 3
+    assert visit["marks_after"]["19"] == 1
+    assert visit["marks_after"]["18"] == 1

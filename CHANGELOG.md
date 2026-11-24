@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- Game history now keeps every visit in the current game (up to 120) and publishes the full list on the game sensor, not only the last 20 turns. Each visit includes `dart_count`, and Cricket visits include `marks` and `marks_after`.
+- Career records keep a full `visit_log` on the most recent games (the last 8) while still storing summary deltas for up to 400 games. Older visit logs are trimmed to keep storage lean.
+- The players sensor now exposes `recent_games` (default last 5) with per-player 3-dart and first-9 averages, checkout percentage, best visit, 100+/140+/180s, Cricket MPR, and the visit log the Stats tab needs for This Game / Last Few Games charts.
+- The game sensor adds `live_stats`, the same per-player summaries computed from the in-progress history.
+- The Darts Arena card gains a **Stats** tab (after Game) for This Game and the last few games: visit scores, running 3-dart and first-9, remaining-score race, gauges, 180s / 140+ / 100+, and donut charts for hit type, visit-score ranges, checkout success, and session win share. Series use each player's integration color. Cricket panels appear only for cricket games.
+
+
 ## 0.6.0
 
 - **Numeric career sensors** for each saved player profile, so InfluxDB and Grafana can chart them: 3-dart average, first-9 average, checkout percent, 180s, ton+, games played, games won, Cricket MPR and highest checkout. A board also gets **Last Visit Score** (the turn total) and **Last Dart Score**. These update only when a turn ends or a game finishes, with no polling. Unique ids follow the profile id, so renaming a player keeps the same entities. Guest is not a saved profile and has no career sensors. Counters use `state_class: total` (they can fall if you undo a finish), averages and rates use `measurement`.

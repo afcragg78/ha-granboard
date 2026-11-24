@@ -6,13 +6,15 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .checkout import suggest_checkout
-from .game import DARTS_PER_TURN, GAME_CRICKET, GAME_X01, STATUS_FINISHED, Game
+from .game import DARTS_PER_TURN, GAME_CRICKET, GAME_X01, STATUS_FINISHED, Game, build_visit
 from .protocol import parse_segment
 
 CAREER_STORAGE_KEY = "granboard.career"
 CAREER_STORAGE_VERSION = 1
 THROW_LIMIT = 8000
 GAME_LIMIT = 400
+RECENT_VISIT_LOG_LIMIT = 8  # keep full per-visit logs for the last few games
+RECENT_GAMES_DEFAULT = 5
 
 
 def _empty_aggregate() -> dict[str, Any]:
@@ -100,15 +102,15 @@ def _finished_visits(game: Game) -> list[dict[str, Any]]:
         else:
             total = 0 if game.turn_bust else sum(d["score"] for d in game.turn)
         visits.append(
-            {
-                "player": player.name,
-                "player_id": player.profile_id,
-                "round": game.round,
-                "darts": [d["segment"] for d in game.turn],
-                "score": total,
-                "bust": game.turn_bust,
-                "after": player.score,
-            }
+            build_visit(
+                player,
+                game=game.game,
+                round_no=game.round,
+                turn=game.turn,
+                score=total,
+                bust=game.turn_bust,
+                after=player.score,
+            )
         )
     return visits
 
@@ -280,6 +282,201 @@ def _highest_from_games(games: list[dict[str, Any]], player_id: str) -> int:
     return highest
 
 
+
+def _hit_kind(segment: str) -> str:
+    """Bucket a dart into singles / doubles / triples / bull / miss."""
+    decoded = _decode(segment)
+    ring = str(decoded.get("ring") or "")
+    number = int(decoded.get("number") or 0)
+    multiplier = int(decoded.get("multiplier") or 0)
+    name = str(decoded.get("segment") or "").upper()
+    if ring == "miss" or name in {"MISS", "M", "OUT"} or (number <= 0 and multiplier <= 0 and ring != "unknown"):
+        return "miss"
+    if number == 25 or ring in {"bull", "bullseye"} or name in {"SB", "DB"}:
+        return "bull"
+    if ring == "triple" or multiplier == 3 or name.startswith("T"):
+        return "triples"
+    if ring == "double" or multiplier == 2 or name.startswith("D"):
+        return "doubles"
+    if ring == "unknown" and name in {"", "UNKNOWN"}:
+        return "miss"
+    return "singles"
+
+
+def hit_type_counts(visits: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {"singles": 0, "doubles": 0, "triples": 0, "bull": 0, "miss": 0}
+    for visit in visits:
+        for segment in visit.get("darts") or []:
+            kind = _hit_kind(str(segment))
+            counts[kind] = int(counts.get(kind) or 0) + 1
+    return counts
+
+
+def visit_range_counts(visits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Visit-score share buckets used by the Stats tab pies and bars."""
+    buckets = [
+        ("1–19", 1, 19),
+        ("20–39", 20, 39),
+        ("40–59", 40, 59),
+        ("60–79", 60, 79),
+        ("80–99", 80, 99),
+        ("100–119", 100, 119),
+        ("120–139", 120, 139),
+        ("140–179", 140, 179),
+        ("180", 180, 180),
+    ]
+    out = []
+    for label, lo, hi in buckets:
+        n = 0
+        for visit in visits:
+            if visit.get("bust"):
+                continue
+            score = int(visit.get("score") or 0)
+            if lo <= score <= hi:
+                n += 1
+        out.append({"key": label, "min": lo, "max": hi, "count": n})
+    return out
+
+
+def _visits_for_player(
+    visits: list[dict[str, Any]],
+    *,
+    player_id: str | None = None,
+    player_name: str | None = None,
+) -> list[dict[str, Any]]:
+    mine: list[dict[str, Any]] = []
+    for visit in visits:
+        vid = visit.get("player_id")
+        if player_id:
+            if vid:
+                if vid == player_id:
+                    mine.append(visit)
+            elif player_name and visit.get("player") == player_name:
+                mine.append(visit)
+        elif player_name and visit.get("player") == player_name:
+            mine.append(visit)
+    return mine
+
+
+def summarize_player_visits(
+    visits: list[dict[str, Any]],
+    *,
+    player_id: str | None = None,
+    player_name: str | None = None,
+    mode: str,
+    start: int | None,
+    double_out: bool,
+) -> dict[str, Any]:
+    """This-game or single-game stats a player would check mid-session."""
+    mine = _visits_for_player(visits, player_id=player_id, player_name=player_name)
+    darts = 0
+    points = 0
+    first9_darts = 0
+    first9_points = 0
+    checkout_attempts = 0
+    checkout_hits = 0
+    one_eighties = 0
+    one_forties = 0
+    ton_plus = 0
+    best_visit = 0
+    highest_checkout = 0
+    cricket_marks = 0
+    already = 0
+    remaining_after: list[int] = []
+    visit_scores: list[int] = []
+    running_avg: list[float] = []
+    for visit in mine:
+        dart_list = list(visit.get("darts") or [])
+        n = int(visit.get("dart_count") or len(dart_list))
+        bust = bool(visit.get("bust"))
+        score = 0 if bust else int(visit.get("score") or 0)
+        darts += n
+        points += score
+        if not bust:
+            best_visit = max(best_visit, score)
+            visit_scores.append(score)
+            if score >= 100:
+                ton_plus += 1
+            if score >= 140:
+                one_forties += 1
+            if score == 180:
+                one_eighties += 1
+        if visit.get("after") is not None:
+            remaining_after.append(int(visit["after"]))
+        metrics = _visit_metrics(
+            visit, mode=mode, start=start, double_out=double_out, already=already
+        )
+        already += n
+        first9_darts += int(metrics["first9_darts"])
+        first9_points += int(metrics["first9_points"])
+        checkout_attempts += int(metrics["checkout_attempts"])
+        checkout_hits += int(metrics["checkout_hits"])
+        highest_checkout = max(highest_checkout, int(metrics.get("highest_checkout") or 0))
+        cricket_marks += int(visit.get("marks") or 0)
+        running_avg.append(round(points * DARTS_PER_TURN / darts, 2) if darts else 0.0)
+    marks_after = {}
+    for visit in reversed(mine):
+        if visit.get("marks_after"):
+            marks_after = dict(visit["marks_after"])
+            break
+    return {
+        "darts": darts,
+        "points": points,
+        "visits": len(mine),
+        "three_dart_avg": _avg(points, darts),
+        "first_9_avg": _avg(first9_points, first9_darts),
+        "checkout_attempts": checkout_attempts,
+        "checkout_hits": checkout_hits,
+        "checkout_pct": _pct(checkout_hits, checkout_attempts),
+        "one_eighties": one_eighties,
+        "one_forties": one_forties,
+        "ton_plus": ton_plus,
+        "best_visit": best_visit,
+        "highest_checkout": highest_checkout,
+        "cricket_mpr": _avg(cricket_marks, darts) if mode == GAME_CRICKET else 0.0,
+        "cricket_marks": cricket_marks,
+        "marks_after": marks_after,
+        "visit_scores": visit_scores,
+        "remaining_after": remaining_after,
+        "running_avg": running_avg,
+        "hit_types": hit_type_counts(mine),
+        "visit_ranges": visit_range_counts(mine),
+    }
+
+
+def _summary_from_delta(delta: dict[str, Any]) -> dict[str, Any]:
+    """Fallback when an older career row has no visit_log."""
+    darts = int(delta.get("darts") or 0)
+    points = int(delta.get("points") or 0)
+    attempts = int(delta.get("checkout_attempts") or 0)
+    hits = int(delta.get("checkout_hits") or 0)
+    cricket_darts = int(delta.get("cricket_darts") or 0)
+    cricket_marks = int(delta.get("cricket_marks") or 0)
+    return {
+        "darts": darts,
+        "points": points,
+        "visits": 0,
+        "three_dart_avg": _avg(points, darts),
+        "first_9_avg": _avg(int(delta.get("first9_points") or 0), int(delta.get("first9_darts") or 0)),
+        "checkout_attempts": attempts,
+        "checkout_hits": hits,
+        "checkout_pct": _pct(hits, attempts),
+        "one_eighties": int(delta.get("one_eighties") or 0),
+        "one_forties": 0,
+        "ton_plus": int(delta.get("ton_plus") or 0),
+        "best_visit": 0,
+        "highest_checkout": int(delta.get("highest_checkout") or 0),
+        "cricket_mpr": _avg(cricket_marks, cricket_darts),
+        "cricket_marks": cricket_marks,
+        "marks_after": {},
+        "visit_scores": [],
+        "remaining_after": [],
+        "running_avg": [],
+        "hit_types": {"singles": 0, "doubles": 0, "triples": 0, "bull": 0, "miss": 0},
+        "visit_ranges": visit_range_counts([]),
+    }
+
+
 class CareerLog:
     """Rolling throw/game log plus cumulative aggregates that survive trimming."""
 
@@ -369,6 +566,7 @@ class CareerLog:
                 "players": players_out,
                 "deltas": deltas,
                 "visits": len(visits),
+                "visit_log": list(visits),
                 "time": recorded_at,
             }
         )
@@ -398,6 +596,62 @@ class CareerLog:
             del self.throws[: len(self.throws) - THROW_LIMIT]
         if len(self.games) > GAME_LIMIT:
             del self.games[: len(self.games) - GAME_LIMIT]
+        keep = {game.get("game_id") for game in self.games[-RECENT_VISIT_LOG_LIMIT:]}
+        for game in self.games:
+            if game.get("game_id") not in keep:
+                game.pop("visit_log", None)
+
+    def recent_games(self, limit: int = RECENT_GAMES_DEFAULT) -> list[dict[str, Any]]:
+        """Last N finished games, with per-visit logs and per-player game stats for the Stats tab."""
+        rows: list[dict[str, Any]] = []
+        cap = max(1, int(limit or RECENT_GAMES_DEFAULT))
+        for game in self.games[-cap:]:
+            visit_log = [dict(v) for v in (game.get("visit_log") or [])]
+            mode = game.get("mode") or ""
+            start = game.get("start")
+            double_out = bool(game.get("double_out"))
+            players_out: list[dict[str, Any]] = []
+            for player in game.get("players") or []:
+                player_id = player.get("player_id")
+                if visit_log:
+                    summary = summarize_player_visits(
+                        visit_log,
+                        player_id=player_id,
+                        player_name=player.get("name"),
+                        mode=mode,
+                        start=start,
+                        double_out=double_out,
+                    )
+                else:
+                    delta = (game.get("deltas") or {}).get(player_id or "") or {}
+                    summary = _summary_from_delta(delta)
+                players_out.append(
+                    {
+                        "player_id": player_id,
+                        "name": player.get("name"),
+                        "color": player.get("color"),
+                        "score": player.get("score"),
+                        "win": bool(player.get("win")),
+                        **summary,
+                    }
+                )
+            visits_count = game.get("visits")
+            if not isinstance(visits_count, int):
+                visits_count = len(visit_log)
+            rows.append(
+                {
+                    "game_id": game.get("game_id"),
+                    "mode": mode,
+                    "start": start,
+                    "double_out": double_out,
+                    "winner": game.get("winner"),
+                    "winner_id": game.get("winner_id"),
+                    "visits": visits_count,
+                    "visit_log": visit_log,
+                    "players": players_out,
+                }
+            )
+        return rows
 
     def dump(self) -> dict[str, Any]:
         return {
